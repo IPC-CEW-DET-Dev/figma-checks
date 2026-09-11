@@ -1,7 +1,7 @@
 export interface ComponentSpec {
   name: string;
-  figma: { fileKey: string; nodeId: string };
-  production: { url: string; selector: string; state?: "default" };
+  figma: { fileKey: string; nodeId: string; variantName?: string };
+  production: { url: string; selector: string; state?: "default"; excludeSelector?: string };
   viewport?: { width: number; height: number };
 }
 
@@ -30,6 +30,8 @@ export type StylePropertyName =
 export interface StyleToken {
   property: StylePropertyName;
   value: string;
+  /** For production tokens only: a CSS-selector-like description of the element the value came from. */
+  source?: string;
 }
 
 export interface StyleTokenSet {
@@ -42,24 +44,27 @@ export interface StyleDiffEntry {
   actual: string | null;
   pass: boolean;
   delta?: string;
+  /** CSS-selector-like description of the production element the actual value came from. */
+  actualSource?: string;
 }
 
-export interface VisualDiffResult {
-  mismatchPercent: number;
-  diffImagePath: string;
+export interface ComponentImages {
   figmaImagePath: string;
   productionImagePath: string;
 }
 
 export interface ComponentResult {
   name: string;
+  figma: { fileKey: string; nodeId: string; variantName?: string };
+  production: { url: string; selector: string; excludeSelector?: string };
   styleDiffs: StyleDiffEntry[];
-  visualDiff: VisualDiffResult | null;
+  images: ComponentImages | null;
   error?: string;
 }
 
 export interface RunResult {
   timestamp: string;
+  displayTimestamp: string;
   outputDir: string;
   components: ComponentResult[];
 }

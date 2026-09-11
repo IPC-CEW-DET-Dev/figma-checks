@@ -14,8 +14,38 @@ const PX_PROPERTIES = new Set<StylePropertyName>([
 ]);
 const COLOR_PROPERTIES = new Set<StylePropertyName>(["color", "backgroundColor"]);
 
+// Figma omits these when there's genuinely nothing to compare (no auto-layout, no text layer) —
+// there's no ground truth, so we skip the check rather than reporting a false failure.
+const SKIP_WHEN_EXPECTED_MISSING = new Set<StylePropertyName>([
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "gap",
+  "color",
+  "fontFamily",
+  "fontSize",
+  "fontWeight",
+  "lineHeight",
+  "letterSpacing",
+]);
+
+// For these, an absent Figma value has a well-defined visual meaning (no fill/radius/shadow), so we
+// still compare against that implicit default instead of skipping — catches unintended production styling.
+const ASSUMED_FIGMA_DEFAULTS: Partial<Record<StylePropertyName, string>> = {
+  backgroundColor: "rgba(0, 0, 0, 0)",
+  borderRadius: "0px",
+  boxShadow: "none",
+};
+
 function tokensToMap(tokens: StyleToken[]): Map<StylePropertyName, string> {
   return new Map(tokens.map((t) => [t.property, t.value]));
+}
+
+function sourcesToMap(tokens: StyleToken[]): Map<StylePropertyName, string> {
+  const map = new Map<StylePropertyName, string>();
+  for (const t of tokens) if (t.source) map.set(t.property, t.source);
+  return map;
 }
 
 function propertiesMatch(
@@ -41,17 +71,25 @@ export function diffStyleTokens(
 ): StyleDiffEntry[] {
   const expectedMap = tokensToMap(expectedTokens);
   const actualMap = tokensToMap(actualTokens);
+  const actualSourceMap = sourcesToMap(actualTokens);
   const properties = new Set<StylePropertyName>([...expectedMap.keys(), ...actualMap.keys()]);
 
   const diffs: StyleDiffEntry[] = [];
   for (const property of properties) {
-    const expected = expectedMap.get(property) ?? null;
     const actual = actualMap.get(property) ?? null;
+    let expected = expectedMap.get(property) ?? null;
+
+    if (expected == null) {
+      if (SKIP_WHEN_EXPECTED_MISSING.has(property)) continue;
+      expected = ASSUMED_FIGMA_DEFAULTS[property] ?? null;
+    }
+
     diffs.push({
       property,
       expected,
       actual,
       pass: propertiesMatch(property, expected, actual, fontAliasOverrides),
+      actualSource: actualSourceMap.get(property),
     });
   }
 

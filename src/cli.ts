@@ -13,17 +13,15 @@ program
   .description("Compare Figma components against their production implementation")
   .option("-c, --config <path>", "path to components.config.json", "components.config.json")
   .option("-o, --only <name>", "only run the component with this name")
-  .option("-t, --threshold <percent>", "max allowed visual mismatch percentage", "2")
   .action(async (opts) => {
-    const threshold = parseFloat(opts.threshold);
     const config = await loadConfig(opts.config);
     const run = await runComparison(config, { only: opts.only });
-    const reportPath = await generateReport(run, threshold);
+    const reportPath = await generateReport(run);
 
     console.log("");
     let anyFailed = false;
     for (const result of run.components) {
-      const passing = isComponentPassing(result, threshold);
+      const passing = isComponentPassing(result);
       if (!passing) anyFailed = true;
       const label = passing ? chalk.green("PASS") : chalk.red("FAIL");
       console.log(`${label}  ${result.name}`);
@@ -31,11 +29,9 @@ program
         console.log(chalk.red(`       ${result.error}`));
         continue;
       }
-      if (result.visualDiff) {
-        console.log(`       visual mismatch: ${result.visualDiff.mismatchPercent.toFixed(2)}%`);
-      }
       for (const diff of result.styleDiffs.filter((d) => !d.pass)) {
-        console.log(chalk.yellow(`       ${diff.property}: expected "${diff.expected}", got "${diff.actual}"`));
+        const location = diff.actualSource ? ` (found on ${chalk.cyan(diff.actualSource)})` : "";
+        console.log(chalk.yellow(`       ${diff.property}: expected "${diff.expected}", got "${diff.actual}"${location}`));
       }
     }
 

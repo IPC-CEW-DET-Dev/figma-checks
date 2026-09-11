@@ -73,6 +73,12 @@ export interface FigmaTypeStyle {
   letterSpacing?: number;
 }
 
+export interface FigmaComponentPropertyDefinition {
+  type: "BOOLEAN" | "INSTANCE_SWAP" | "TEXT" | "VARIANT";
+  defaultValue?: string | boolean;
+  variantOptions?: string[];
+}
+
 export interface FigmaNode {
   id: string;
   name: string;
@@ -89,5 +95,6 @@ export interface FigmaNode {
   paddingLeft?: number;
   itemSpacing?: number;
   absoluteBoundingBox?: { x: number; y: number; width: number; height: number };
+  componentPropertyDefinitions?: Record<string, FigmaComponentPropertyDefinition>;
   children?: FigmaNode[];
 }

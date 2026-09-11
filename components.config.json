@@ -2,9 +2,21 @@
   "fontAliasOverrides": {},
   "components": [
     {
-      "name": "Primary Button",
-      "figma": { "fileKey": "REPLACE_WITH_FIGMA_FILE_KEY", "nodeId": "REPLACE_WITH_NODE_ID" },
-      "production": { "url": "https://example.com", "selector": ".btn-primary" }
+      "name": "Accordion Header",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "1612:15526" },
+      "production": {
+        "url": "https://www.everbank.com/support/personal/getting-started/open-an-account",
+        "selector": "[class$=\"accordion-block__panel\"]",
+        "excludeSelector": "[class$=\"accordion-block__panel-content\"]"
+      }
+    },
+    {
+      "name": "Accordion Body",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "1612:15581" },
+      "production": {
+        "url": "https://www.everbank.com/banking/cdars-cd?openPanel=renewal-requests#renewal-requests",
+        "selector": "[class$=\"accordion-block__panel-content\"][id$=\"renewal-requests\"]"
+      }
     }
   ]
 }
