@@ -1,7 +1,7 @@
 export interface ComponentSpec {
   name: string;
   figma: { fileKey: string; nodeId: string; variantName?: string };
-  production: { url: string; selector: string; state?: "default"; excludeSelector?: string };
+  production: { url: string; selector: string; excludeSelector?: string };
   viewport?: { width: number; height: number };
 }
 
@@ -34,16 +34,11 @@ export interface StyleToken {
   source?: string;
 }
 
-export interface StyleTokenSet {
-  tokens: StyleToken[];
-}
-
 export interface StyleDiffEntry {
   property: StylePropertyName;
   expected: string | null;
   actual: string | null;
   pass: boolean;
-  delta?: string;
   /** CSS-selector-like description of the production element the actual value came from. */
   actualSource?: string;
 }

@@ -71,8 +71,8 @@ export async function generateReport(run: RunResult): Promise<string> {
         </header>
         <div class="component-body">
           <div class="side">
-            ${metadata}
             ${images}
+            ${metadata}
           </div>
           <div class="details">
             <table>
@@ -145,7 +145,7 @@ export async function generateReport(run: RunResult): Promise<string> {
   .component-body { display: grid; grid-template-columns: 300px 1fr; gap: 0; }
   .side { padding: 1.25rem 1.5rem; border-right: 1px solid var(--border); background: #fafbfc; }
   .details { padding: 1.25rem 1.5rem; overflow-x: auto; }
-  .meta { margin: 0 0 1.25rem; }
+  .meta { margin: 0; }
   .meta-row { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.85rem; }
   .meta-row:last-child { margin-bottom: 0; }
   .meta dt { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
@@ -153,7 +153,7 @@ export async function generateReport(run: RunResult): Promise<string> {
   .meta a { color: #2757c9; text-decoration: none; }
   .meta a:hover { text-decoration: underline; }
   .meta-note { color: var(--muted); }
-  .images { display: flex; flex-direction: column; gap: 0.85rem; }
+  .images { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.25rem; }
   .images figure { margin: 0; }
   .images figcaption { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.35rem; }
   .images img { display: block; width: 100%; border: 1px solid var(--border); border-radius: 6px; background: white; }
