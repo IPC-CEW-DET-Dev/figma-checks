@@ -1,0 +1,10 @@
+{
+  "fontAliasOverrides": {},
+  "components": [
+    {
+      "name": "Primary Button",
+      "figma": { "fileKey": "REPLACE_WITH_FIGMA_FILE_KEY", "nodeId": "REPLACE_WITH_NODE_ID" },
+      "production": { "url": "https://example.com", "selector": ".btn-primary" }
+    }
+  ]
+}
