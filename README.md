@@ -1,6 +1,6 @@
 # component-tester
 
-Compares Figma components against their live production implementation — structurally (color, typography, spacing, radius, shadow) — and generates an HTML report with side-by-side screenshots for visual reference.
+Compares Figma components against their live production implementation — both visually (pixel diff) and structurally (color, typography, spacing, radius, shadow) — and generates an HTML report.
 
 ## Setup
 
@@ -41,6 +41,7 @@ An optional top-level `fontAliasOverrides` map handles fonts renamed entirely be
 ```
 npm run compare                      # run all components
 npm run compare -- --only "Primary Button"
+npm run compare -- --threshold 5     # allow up to 5% visual mismatch (default 2%)
 ```
 
-Output is written to `reports/<timestamp>/report.html`, with per-component metadata, side-by-side Figma/production screenshots, and a style-token pass/fail table. The command exits non-zero if any component has a failing style token or an error, so it can be wired into CI later.
+Output is written to `reports/<timestamp>/report.html`, with per-component metadata, side-by-side Figma/production screenshots, a pixel-diff overlay, and a style-token pass/fail table. The command exits non-zero if any component has a failing style token, exceeds the visual mismatch threshold, or errors, so it can be wired into CI later.

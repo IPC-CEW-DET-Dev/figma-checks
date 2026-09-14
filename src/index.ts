@@ -9,6 +9,7 @@ import { resolveComponentVariant } from "./figma/resolveVariant.js";
 import { launchBrowser, newContext } from "./production/browser.js";
 import { captureElement } from "./production/captureElement.js";
 import { diffStyleTokens } from "./diff/styleDiff.js";
+import { diffImages } from "./diff/visualDiff.js";
 
 function sanitizeName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -101,13 +102,23 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
         }
 
         const styleDiffs = diffStyleTokens(expectedTokens, captureResult.tokens, config.manifest.fontAliasOverrides);
+        const { mismatchPercent, diffImagePath } = await diffImages(
+          figmaImagePath,
+          captureResult.screenshotPath,
+          path.join(componentDir, "diff.png")
+        );
 
         results.push({
           name: component.name,
           figma: component.figma,
           production: component.production,
           styleDiffs,
-          images: { figmaImagePath, productionImagePath: captureResult.screenshotPath },
+          images: {
+            figmaImagePath,
+            productionImagePath: captureResult.screenshotPath,
+            diffImagePath,
+            mismatchPercent,
+          },
         });
       } catch (err) {
         results.push({

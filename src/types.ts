@@ -46,6 +46,8 @@ export interface StyleDiffEntry {
 export interface ComponentImages {
   figmaImagePath: string;
   productionImagePath: string;
+  diffImagePath: string;
+  mismatchPercent: number;
 }
 
 export interface ComponentResult {

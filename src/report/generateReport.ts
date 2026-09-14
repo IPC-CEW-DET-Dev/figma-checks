@@ -11,12 +11,12 @@ function relative(outputDir: string, filePath: string): string {
   return path.relative(outputDir, filePath);
 }
 
-export async function generateReport(run: RunResult): Promise<string> {
+export async function generateReport(run: RunResult, thresholdPercent: number): Promise<string> {
   const reportPath = path.join(run.outputDir, "report.html");
 
   const componentSections = run.components
     .map((result) => {
-      const passing = isComponentPassing(result);
+      const passing = isComponentPassing(result, thresholdPercent);
       const statusLabel = passing ? "PASS" : "FAIL";
       const statusClass = passing ? "pass" : "fail";
 
@@ -48,6 +48,7 @@ export async function generateReport(run: RunResult): Promise<string> {
         <div class="images">
           <figure><figcaption>Figma</figcaption><img src="${relative(run.outputDir, result.images.figmaImagePath)}" alt="Figma"></figure>
           <figure><figcaption>Production</figcaption><img src="${relative(run.outputDir, result.images.productionImagePath)}" alt="Production"></figure>
+          <figure><figcaption>Diff (${result.images.mismatchPercent.toFixed(2)}% mismatch)</figcaption><img src="${relative(run.outputDir, result.images.diffImagePath)}" alt="Diff"></figure>
         </div>`
         : "";
 
@@ -86,7 +87,7 @@ export async function generateReport(run: RunResult): Promise<string> {
     })
     .join("\n");
 
-  const passCount = run.components.filter((r) => isComponentPassing(r)).length;
+  const passCount = run.components.filter((r) => isComponentPassing(r, thresholdPercent)).length;
   const totalCount = run.components.length;
   const allPassing = totalCount > 0 && passCount === totalCount;
 
@@ -178,7 +179,7 @@ export async function generateReport(run: RunResult): Promise<string> {
     <div class="page-header">
       <div>
         <h1>Component Comparison Report</h1>
-        <div class="run-meta">${escapeHtml(run.displayTimestamp)}</div>
+        <div class="run-meta">${escapeHtml(run.displayTimestamp)} · threshold: ${thresholdPercent}% visual mismatch</div>
       </div>
       <span class="summary-pill">${passCount}/${totalCount} passing</span>
     </div>
