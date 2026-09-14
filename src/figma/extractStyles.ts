@@ -32,25 +32,49 @@ function findFirstTextNode(node: FigmaNode): FigmaNode | null {
   return null;
 }
 
+/**
+ * Breadth-first list of the node and all descendants. The node you point `nodeId` at is often a
+ * thin wrapper (especially for component instances) — the real fills/radius/padding are frequently
+ * one or two levels deeper on an inner frame, so callers scan this list for the first match instead
+ * of only trusting the exact node.
+ */
+function collectNodesBreadthFirst(root: FigmaNode): FigmaNode[] {
+  const nodes: FigmaNode[] = [root];
+  const queue: FigmaNode[] = [root];
+  while (queue.length > 0) {
+    const current = queue.shift() as FigmaNode;
+    for (const child of current.children ?? []) {
+      nodes.push(child);
+      queue.push(child);
+    }
+  }
+  return nodes;
+}
+
 export function extractStyleTokens(node: FigmaNode): StyleToken[] {
   const tokens: StyleToken[] = [];
+  const nodes = collectNodesBreadthFirst(node);
 
-  const fillColor = node.fills?.map(paintToRgba).find((c) => c != null);
+  const fillNode = nodes.find((n) => n.fills?.some((f) => paintToRgba(f) != null));
+  const fillColor = fillNode?.fills?.map(paintToRgba).find((c) => c != null);
   if (fillColor) tokens.push({ property: "backgroundColor", value: fillColor });
 
-  if (node.cornerRadius != null) {
-    tokens.push({ property: "borderRadius", value: `${node.cornerRadius}px` });
+  const radiusNode = nodes.find((n) => n.cornerRadius != null);
+  if (radiusNode) {
+    tokens.push({ property: "borderRadius", value: `${radiusNode.cornerRadius}px` });
   }
 
-  const shadow = node.effects?.map(effectToBoxShadow).find((s) => s != null);
+  const shadowNode = nodes.find((n) => n.effects?.some((e) => effectToBoxShadow(e) != null));
+  const shadow = shadowNode?.effects?.map(effectToBoxShadow).find((s) => s != null);
   if (shadow) tokens.push({ property: "boxShadow", value: shadow });
 
-  if (node.layoutMode && node.layoutMode !== "NONE") {
-    tokens.push({ property: "paddingTop", value: `${node.paddingTop ?? 0}px` });
-    tokens.push({ property: "paddingRight", value: `${node.paddingRight ?? 0}px` });
-    tokens.push({ property: "paddingBottom", value: `${node.paddingBottom ?? 0}px` });
-    tokens.push({ property: "paddingLeft", value: `${node.paddingLeft ?? 0}px` });
-    tokens.push({ property: "gap", value: `${node.itemSpacing ?? 0}px` });
+  const layoutNode = nodes.find((n) => n.layoutMode && n.layoutMode !== "NONE");
+  if (layoutNode) {
+    tokens.push({ property: "paddingTop", value: `${layoutNode.paddingTop ?? 0}px` });
+    tokens.push({ property: "paddingRight", value: `${layoutNode.paddingRight ?? 0}px` });
+    tokens.push({ property: "paddingBottom", value: `${layoutNode.paddingBottom ?? 0}px` });
+    tokens.push({ property: "paddingLeft", value: `${layoutNode.paddingLeft ?? 0}px` });
+    tokens.push({ property: "gap", value: `${layoutNode.itemSpacing ?? 0}px` });
   }
 
   const textNode = findFirstTextNode(node);

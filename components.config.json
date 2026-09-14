@@ -3,7 +3,7 @@
   "components": [
     {
       "name": "Accordion Header",
-      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "1612:15526" },
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55547:11322" },
       "production": {
         "url": "https://www.everbank.com/support/personal/getting-started/open-an-account",
         "selector": "[class$=\"accordion-block__panel\"]",
