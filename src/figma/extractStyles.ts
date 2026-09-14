@@ -32,28 +32,35 @@ function findFirstTextNode(node: FigmaNode): FigmaNode | null {
   return null;
 }
 
+interface NodeWithDepth {
+  node: FigmaNode;
+  depth: number;
+}
+
 /**
- * Breadth-first list of the node and all descendants. The node you point `nodeId` at is often a
- * thin wrapper (especially for component instances) — the real fills/radius/padding are frequently
- * one or two levels deeper on an inner frame, so callers scan this list for the first match instead
- * of only trusting the exact node.
+ * Breadth-first list of the node and all descendants (with depth). The node you point `nodeId` at is
+ * often a thin wrapper (especially for component instances) — the real fills/radius/padding are
+ * frequently one or two levels deeper on an inner frame, so callers scan this list for the first
+ * match instead of only trusting the exact node.
  */
-function collectNodesBreadthFirst(root: FigmaNode): FigmaNode[] {
-  const nodes: FigmaNode[] = [root];
-  const queue: FigmaNode[] = [root];
+function collectNodesBreadthFirst(root: FigmaNode): NodeWithDepth[] {
+  const result: NodeWithDepth[] = [{ node: root, depth: 0 }];
+  const queue: NodeWithDepth[] = [result[0]];
   while (queue.length > 0) {
-    const current = queue.shift() as FigmaNode;
-    for (const child of current.children ?? []) {
-      nodes.push(child);
-      queue.push(child);
+    const current = queue.shift() as NodeWithDepth;
+    for (const child of current.node.children ?? []) {
+      const entry: NodeWithDepth = { node: child, depth: current.depth + 1 };
+      result.push(entry);
+      queue.push(entry);
     }
   }
-  return nodes;
+  return result;
 }
 
 export function extractStyleTokens(node: FigmaNode): StyleToken[] {
   const tokens: StyleToken[] = [];
-  const nodes = collectNodesBreadthFirst(node);
+  const entries = collectNodesBreadthFirst(node);
+  const nodes = entries.map((e) => e.node);
 
   const fillNode = nodes.find((n) => n.fills?.some((f) => paintToRgba(f) != null));
   const fillColor = fillNode?.fills?.map(paintToRgba).find((c) => c != null);
@@ -68,7 +75,19 @@ export function extractStyleTokens(node: FigmaNode): StyleToken[] {
   const shadow = shadowNode?.effects?.map(effectToBoxShadow).find((s) => s != null);
   if (shadow) tokens.push({ property: "boxShadow", value: shadow });
 
-  const layoutNode = nodes.find((n) => n.layoutMode && n.layoutMode !== "NONE");
+  // Components often nest multiple auto-layout frames — e.g. an instance root that just hugs a single
+  // child, plus that child's own auto-layout frame with the real padding. Both can end up the same
+  // size (the wrapper hugs its child exactly), so on a tie in box size we prefer the deeper node —
+  // a wrapper that merely matches its child's size is a pass-through, not the meaningful frame.
+  const rootBox = node.absoluteBoundingBox;
+  const boxSizeDelta = (n: FigmaNode) => {
+    const box = n.absoluteBoundingBox;
+    if (!box || !rootBox) return Infinity;
+    return Math.abs(box.width - rootBox.width) + Math.abs(box.height - rootBox.height);
+  };
+  const layoutNode = entries
+    .filter((e) => e.node.layoutMode && e.node.layoutMode !== "NONE")
+    .sort((a, b) => boxSizeDelta(a.node) - boxSizeDelta(b.node) || b.depth - a.depth)[0]?.node;
   if (layoutNode) {
     tokens.push({ property: "paddingTop", value: `${layoutNode.paddingTop ?? 0}px` });
     tokens.push({ property: "paddingRight", value: `${layoutNode.paddingRight ?? 0}px` });
