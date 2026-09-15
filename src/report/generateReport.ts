@@ -115,7 +115,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
             ${metadata}
           </div>
           <div class="details">
-            ${renderStyleTable(result.styleDiffs)}
+            ${result.parts.length > 0 ? "" : renderStyleTable(result.styleDiffs)}
             ${partSections}
           </div>
         </div>
