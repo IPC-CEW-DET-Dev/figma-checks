@@ -1,11 +1,30 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import "dotenv/config";
-import type { ManifestConfig } from "../types.js";
+import type { ManifestConfig, Viewport } from "../types.js";
 
 export interface AppConfig {
   manifest: ManifestConfig;
   figmaToken: string;
+}
+
+// Raw JSON allows a component's "viewport" to be either an inline object or a string reference
+// into the top-level "viewports" map; resolveViewport() normalizes it before anything else runs.
+type RawManifestConfig = Omit<ManifestConfig, "components"> & {
+  components: (Omit<ManifestConfig["components"][number], "viewport"> & { viewport?: Viewport | string })[];
+};
+
+function resolveViewport(
+  viewport: Viewport | string | undefined,
+  viewports: Record<string, Viewport> | undefined,
+  context: string
+): Viewport | undefined {
+  if (viewport == null || typeof viewport !== "string") return viewport;
+  const resolved = viewports?.[viewport];
+  if (!resolved) {
+    throw new Error(`${context} references unknown viewport "${viewport}". Define it under top-level "viewports".`);
+  }
+  return resolved;
 }
 
 export async function loadConfig(configPath = "components.config.json"): Promise<AppConfig> {
@@ -15,11 +34,19 @@ export async function loadConfig(configPath = "components.config.json"): Promise
   }
 
   const raw = await readFile(path.resolve(configPath), "utf-8");
-  const manifest = JSON.parse(raw) as ManifestConfig;
+  const rawManifest = JSON.parse(raw) as RawManifestConfig;
 
-  if (!Array.isArray(manifest.components) || manifest.components.length === 0) {
+  if (!Array.isArray(rawManifest.components) || rawManifest.components.length === 0) {
     throw new Error(`No components found in ${configPath}. Add at least one entry to "components".`);
   }
+
+  const manifest: ManifestConfig = {
+    ...rawManifest,
+    components: rawManifest.components.map((component) => ({
+      ...component,
+      viewport: resolveViewport(component.viewport, rawManifest.viewports, `Component "${component.name}"`),
+    })),
+  };
 
   for (const component of manifest.components) {
     if (!component.name || !component.figma?.fileKey || !component.figma?.nodeId) {

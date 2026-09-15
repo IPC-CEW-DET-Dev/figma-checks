@@ -6,11 +6,16 @@ export interface ComponentPart {
   production: { selector: string; excludeSelector?: string };
 }
 
+export interface Viewport {
+  width: number;
+  height: number;
+}
+
 export interface ComponentSpec {
   name: string;
   figma: { fileKey: string; nodeId: string; variantName?: string; excludeLayerName?: string };
   production: { url: string; selector: string; excludeSelector?: string };
-  viewport?: { width: number; height: number };
+  viewport?: Viewport;
   /** For composite components (e.g. an accordion's header+body): named sub-sections, each with its
    *  own explicit Figma node and production selector, so style diffs don't have to guess which
    *  nested frame/element is "the" one. The top-level figma/production above still drive the overall
@@ -20,6 +25,9 @@ export interface ComponentSpec {
 
 export interface ManifestConfig {
   fontAliasOverrides?: Record<string, string>;
+  /** Named, reusable viewports (e.g. "desktop", "mobile") that components can reference by name
+   *  instead of repeating `{ width, height }` everywhere. Resolved at load time. */
+  viewports?: Record<string, Viewport>;
   components: ComponentSpec[];
 }
 

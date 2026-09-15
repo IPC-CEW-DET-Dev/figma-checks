@@ -1,10 +1,15 @@
 #!/usr/bin/env node
+import dns from "node:dns";
 import { Command } from "commander";
 import chalk from "chalk";
 import { loadConfig } from "./config/loadConfig.js";
 import { runComparison } from "./index.js";
 import { generateReport } from "./report/generateReport.js";
 import { isComponentPassing } from "./report/summary.js";
+
+// Node's DNS resolver can disagree with the OS resolver on some networks (often IPv6-related),
+// causing spurious ENOTFOUND for hosts that resolve fine via `nslookup`/curl. Preferring IPv4 avoids it.
+dns.setDefaultResultOrder("ipv4first");
 
 const program = new Command();
 

@@ -1,22 +1,59 @@
 {
   "fontAliasOverrides": {},
+  "viewports": {
+    "desktop": { "width": 1440, "height": 900 },
+    "mobile": { "width": 393, "height": 852 }
+  },
   "components": [
     {
-      "name": "Accordion Closed",
+      "name": "Accordion Closed - desktop",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55582:1006" },
+      "production": {
+        "url": "https://www.everbank.com/banking/money-market",
+        "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]",
+        "excludeSelector": "[class$=\"accordion-block__panel-content\"]"
+      },
+      "viewport": "desktop"
+    },
+    {
+      "name": "Accordion Open - desktop",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55582:1005" },
+      "production": {
+        "url": "https://www.everbank.com/banking/money-market?openPanel=access-money#access-money",
+        "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]"
+      },
+      "viewport": "desktop",
+      "parts": [
+        {
+          "name": "Header",
+          "figma": { "layerName": "Accordion Header" },
+          "production": { "selector": "[id$=\"access-money\"] [class*=\"accordion-block__panel-header\"]" }
+        },
+        {
+          "name": "Body",
+          "figma": { "layerName": "Accordion Body", "excludeLayerName": "Standard Text Block" },
+          "production": { "selector": "[class$=\"accordion-block__panel-content\"][id$=\"access-money\"]", "excludeSelector": "[class*=\"text-block\"]" }
+        }
+      ]
+    },
+    {
+      "name": "Accordion Closed - mobile",
       "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55565:1021" },
       "production": {
         "url": "https://www.everbank.com/banking/money-market",
         "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]",
         "excludeSelector": "[class$=\"accordion-block__panel-content\"]"
-      }
+      },
+      "viewport": "mobile"
     },
     {
-      "name": "Accordion Open",
+      "name": "Accordion Open - mobile",
       "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55565:1037" },
       "production": {
         "url": "https://www.everbank.com/banking/money-market?openPanel=access-money#access-money",
         "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]"
       },
+      "viewport": "mobile",
       "parts": [
         {
           "name": "Header",
