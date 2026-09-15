@@ -49,6 +49,26 @@ Each entry in `components.config.json` pairs a Figma node with a production DOM 
   - `figma.layerName` — the exact layer name of the sub-frame, as seen in the Figma layers panel (case-insensitive). Resolved by searching the parent component's already-fetched tree — no extra API call, and far easier to get right than a nested instance-child node ID.
   - `figma.nodeId` — an explicit node ID instead of `layerName`, if you already have it (e.g. via the Figma API) or the layer name isn't unique enough.
   - The top-level `figma`/`production` still drive the overall screenshot and visual pixel-diff for the whole composite; `parts` only affect style-token diffing.
+- `hideGeneralTable` (optional, default `false`) — hides the top-level style-token table, keeping only the parts' tables (the top-level screenshot/visual-diff still shows). Set this when the top-level comparison is ambiguous or redundant once `parts` are added — see below.
+
+### Recommended pattern: BEM-styled production code
+
+If your production styles follow BEM (`.block`, `.block__element`), lean on `parts` instead of relying on the top-level comparison's node-selection heuristics (which have to guess which nested Figma frame/DOM element is "the" one when a component has multiple internal sections). Add one `part` per meaningful `block__element`, matching each to its corresponding Figma layer, and set `hideGeneralTable: true`:
+
+```json
+{
+  "name": "Alert Block",
+  "figma": { "fileKey": "abc123", "nodeId": "1:1" },
+  "production": { "url": "https://example.com", "selector": ".alert-block" },
+  "hideGeneralTable": true,
+  "parts": [
+    { "name": "Body", "figma": { "layerName": "Alert Body" }, "production": { "selector": ".alert-block__body" } },
+    { "name": "Close Button", "figma": { "layerName": "Close" }, "production": { "selector": ".alert-block__close" } }
+  ]
+}
+```
+
+This keeps the top-level `figma`/`production` purely for the reference screenshot and visual pixel-diff, while every style-token comparison comes from an explicit, unambiguous element-to-layer mapping.
 
 An optional top-level `fontAliasOverrides` map handles fonts renamed entirely between Figma and production (e.g. `"Inter": "InterVariable"`). Font matching is otherwise automatic (case-insensitive substring match against the CSS font stack).
 

@@ -1,5 +1,5 @@
 {
-  "fontAliasOverrides": {},
+  "fontAliasOverrides": { "Visby CF": "VisbyCF" },
   "viewports": {
     "desktop": { "width": 1440, "height": 900 },
     "mobile": { "width": 393, "height": 852 }
@@ -23,6 +23,7 @@
         "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]"
       },
       "viewport": "desktop",
+      "hideGeneralTable": true,
       "parts": [
         {
           "name": "Header",
@@ -54,6 +55,7 @@
         "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]"
       },
       "viewport": "mobile",
+      "hideGeneralTable": true,
       "parts": [
         {
           "name": "Header",
@@ -72,9 +74,23 @@
       "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55594:1867" },
       "production": {
         "url": "https://www.everbank.com/",
-        "selector": "[class$=\"alert-block\"]"
+        "selector": "[class$=\"alert-block\"]",
+        "excludeSelector": "[class$=\"alert-block__close\"]"
       },
-      "viewport": "desktop"
+      "viewport": "desktop",
+      "hideGeneralTable": true,
+      "parts": [
+        {
+          "name": "Close Button",
+          "figma": { "nodeId": "I55594:1867;2422:21695" },
+          "production": { "selector": "[class$=\"alert-block__close\"]" }
+        },
+        {
+          "name": "Body",
+          "figma": { "layerName": "Alert Body" },
+          "production": { "selector": "[class$=\"alert-block__body\"]" }
+        }
+      ]
     }
   ]
 }

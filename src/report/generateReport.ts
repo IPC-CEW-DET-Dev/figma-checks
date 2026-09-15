@@ -11,6 +11,10 @@ function relative(outputDir: string, filePath: string): string {
   return path.relative(outputDir, filePath);
 }
 
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 function renderPartMeta(part: ComponentPartResult): string {
   const figmaRef = part.figma.layerName
     ? `layer <code>${escapeHtml(part.figma.layerName)}</code>`
@@ -59,6 +63,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
       const passing = isComponentPassing(result, thresholdPercent);
       const statusLabel = passing ? "PASS" : "FAIL";
       const statusClass = passing ? "pass" : "fail";
+      const anchorId = slugify(result.name);
 
       const nodeIdUrlSafe = result.figma.nodeId.replace(/:/g, "-");
       const figmaUrl = `https://www.figma.com/design/${result.figma.fileKey}?node-id=${nodeIdUrlSafe}`;
@@ -71,7 +76,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
 
       if (result.error) {
         return `
-        <section class="component ${statusClass}">
+        <section class="component ${statusClass}" id="${anchorId}">
           <header class="component-header">
             <h2>${escapeHtml(result.name)}</h2>
             <span class="status">${statusLabel}</span>
@@ -104,7 +109,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
         .join("");
 
       return `
-      <section class="component ${statusClass}">
+      <section class="component ${statusClass}" id="${anchorId}">
         <header class="component-header">
           <h2>${escapeHtml(result.name)}</h2>
           <span class="status">${statusLabel}</span>
@@ -115,7 +120,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
             ${metadata}
           </div>
           <div class="details">
-            ${result.parts.length > 0 ? "" : renderStyleTable(result.styleDiffs)}
+            ${result.hideGeneralTable ? "" : renderStyleTable(result.styleDiffs)}
             ${partSections}
           </div>
         </div>
@@ -126,6 +131,13 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
   const passCount = run.components.filter((r) => isComponentPassing(r, thresholdPercent)).length;
   const totalCount = run.components.length;
   const allPassing = totalCount > 0 && passCount === totalCount;
+
+  const navOptions = run.components
+    .map((r) => {
+      const passing = isComponentPassing(r, thresholdPercent);
+      return `<option value="${slugify(r.name)}">${passing ? "✓" : "✗"} ${escapeHtml(r.name)}</option>`;
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -148,12 +160,22 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
     color: var(--text);
     background: #f4f5f7;
     margin: 0;
-    padding: 3rem 2rem;
+    padding: 0 2rem 3rem;
   }
   .page { max-width: 1180px; margin: 0 auto; }
-  .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; }
-  h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; }
-  .run-meta { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: sticky; top: 0; z-index: 20;
+    background: #f4f5f7; padding: 1.5rem 0; margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 1.3rem; margin: 0; letter-spacing: -0.01em; }
+  .run-meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+  .nav-controls { display: flex; align-items: center; gap: 0.75rem; }
+  #component-nav {
+    font-size: 0.85rem; padding: 0.45rem 0.7rem; border-radius: 6px;
+    border: 1px solid var(--border); background: white; color: var(--text); max-width: 260px;
+  }
   .summary-pill {
     font-size: 0.9rem; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 999px;
     background: ${allPassing ? "var(--pass-bg)" : "var(--fail-bg)"};
@@ -166,6 +188,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
     margin-bottom: 1.5rem;
+    scroll-margin-top: 5.5rem;
     overflow: hidden;
   }
   .component-header {
@@ -220,7 +243,13 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
         <h1>Component Comparison Report</h1>
         <div class="run-meta">${escapeHtml(run.displayTimestamp)} · threshold: ${thresholdPercent}% visual mismatch</div>
       </div>
-      <span class="summary-pill">${passCount}/${totalCount} passing</span>
+      <div class="nav-controls">
+        <select id="component-nav" onchange="if(this.value){document.getElementById(this.value).scrollIntoView({behavior:'smooth',block:'start'});}">
+          <option value="">Jump to component…</option>
+          ${navOptions}
+        </select>
+        <span class="summary-pill">${passCount}/${totalCount} passing</span>
+      </div>
     </div>
     ${componentSections}
   </div>

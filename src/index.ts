@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import type { Browser } from "playwright";
 import type { AppConfig } from "./config/loadConfig.js";
@@ -118,6 +118,7 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
           production: component.production,
           styleDiffs,
           parts,
+          hideGeneralTable: component.hideGeneralTable,
           images: {
             figmaImagePath,
             productionImagePath: captureResult.screenshotPath,
@@ -132,6 +133,7 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
           production: component.production,
           styleDiffs: [],
           parts: [],
+          hideGeneralTable: component.hideGeneralTable,
           images: null,
           error: describeError(err),
         });
@@ -141,7 +143,24 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
     await browser.close();
   }
 
+  await pruneOldReports("reports", 3);
+
   return { timestamp, displayTimestamp, outputDir, components: results };
+}
+
+/** Keeps only the `keep` most-recently-modified run folders under `reportsDir`, deleting the rest. */
+async function pruneOldReports(reportsDir: string, keep: number): Promise<void> {
+  const entries = await readdir(reportsDir, { withFileTypes: true });
+  const dirs = entries.filter((e) => e.isDirectory());
+
+  const withMtime = await Promise.all(
+    dirs.map(async (d) => ({ name: d.name, mtimeMs: (await stat(path.join(reportsDir, d.name))).mtimeMs }))
+  );
+  withMtime.sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  for (const dir of withMtime.slice(keep)) {
+    await rm(path.join(reportsDir, dir.name), { recursive: true, force: true });
+  }
 }
 
 /** Runs each declared sub-section independently, so composite components get unambiguous per-part style diffs. */

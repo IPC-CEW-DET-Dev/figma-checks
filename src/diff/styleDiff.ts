@@ -21,7 +21,6 @@ const SKIP_WHEN_EXPECTED_MISSING = new Set<StylePropertyName>([
   "paddingRight",
   "paddingBottom",
   "paddingLeft",
-  "gap",
   "color",
   "fontFamily",
   "fontSize",
@@ -30,12 +29,14 @@ const SKIP_WHEN_EXPECTED_MISSING = new Set<StylePropertyName>([
   "letterSpacing",
 ]);
 
-// For these, an absent Figma value has a well-defined visual meaning (no fill/radius/shadow), so we
-// still compare against that implicit default instead of skipping — catches unintended production styling.
+// For these, an absent Figma value has a well-defined visual meaning (no fill/radius/shadow/gap), so
+// we still compare against that implicit default instead of skipping — catches unintended production
+// styling (e.g. production adding spacing that the design never called for).
 const ASSUMED_FIGMA_DEFAULTS: Partial<Record<StylePropertyName, string>> = {
   backgroundColor: "rgba(0, 0, 0, 0)",
   borderRadius: "0px",
   boxShadow: "none",
+  gap: "0px",
 };
 
 function tokensToMap(tokens: StyleToken[]): Map<StylePropertyName, string> {
@@ -78,6 +79,9 @@ export function diffStyleTokens(
   for (const property of properties) {
     const actual = actualMap.get(property) ?? null;
     let expected = expectedMap.get(property) ?? null;
+
+    // "auto" gap (space-between distribution) has no fixed value at all — not comparable either way.
+    if (property === "gap" && expected === "auto") continue;
 
     if (expected == null) {
       if (SKIP_WHEN_EXPECTED_MISSING.has(property)) continue;

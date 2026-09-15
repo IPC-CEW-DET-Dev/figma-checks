@@ -39,7 +39,7 @@ program
       if (result.images) {
         console.log(`       visual mismatch: ${result.images.mismatchPercent.toFixed(2)}%`);
       }
-      if (result.parts.length === 0) {
+      if (!result.hideGeneralTable) {
         for (const diff of result.styleDiffs.filter((d) => !d.pass)) {
           const location = diff.actualSource ? ` (found on ${chalk.cyan(diff.actualSource)})` : "";
           console.log(chalk.yellow(`       ${diff.property}: expected "${diff.expected}", got "${diff.actual}"${location}`));

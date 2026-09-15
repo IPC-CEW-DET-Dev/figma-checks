@@ -21,6 +21,10 @@ export interface ComponentSpec {
    *  nested frame/element is "the" one. The top-level figma/production above still drive the overall
    *  screenshot and visual diff. */
   parts?: ComponentPart[];
+  /** Set true when `parts` fully replace the top-level comparison (e.g. header+body making the
+   *  combined top-level diff ambiguous). Leave false/unset when `parts` are just an additional
+   *  sub-element (e.g. a close button) and the top-level comparison is still meaningful on its own. */
+  hideGeneralTable?: boolean;
 }
 
 export interface ManifestConfig {
@@ -85,6 +89,7 @@ export interface ComponentResult {
   production: { url: string; selector: string; excludeSelector?: string };
   styleDiffs: StyleDiffEntry[];
   parts: ComponentPartResult[];
+  hideGeneralTable?: boolean;
   images: ComponentImages | null;
   error?: string;
 }
