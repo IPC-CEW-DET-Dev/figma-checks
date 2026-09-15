@@ -66,6 +66,15 @@
           "production": { "selector": "[class$=\"accordion-block__panel-content\"][id$=\"access-money\"]", "excludeSelector": "[class*=\"text-block\"]" }
         }
       ]
+    },
+        {
+      "name": "Alert Block - page",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55594:1867" },
+      "production": {
+        "url": "https://www.everbank.com/",
+        "selector": "[class$=\"alert-block\"]"
+      },
+      "viewport": "desktop"
     }
   ]
 }
