@@ -38,3 +38,15 @@ export function resolveComponentVariant(node: FigmaNode, variantNameOverride?: s
 
   return node.children[0];
 }
+
+/** Breadth-first search for a descendant (or the node itself) with an exact, case-insensitive name match. */
+export function findNodeByName(root: FigmaNode, name: string): FigmaNode | null {
+  const target = name.trim().toLowerCase();
+  const queue: FigmaNode[] = [root];
+  while (queue.length > 0) {
+    const current = queue.shift() as FigmaNode;
+    if (current.name.trim().toLowerCase() === target) return current;
+    for (const child of current.children ?? []) queue.push(child);
+  }
+  return null;
+}

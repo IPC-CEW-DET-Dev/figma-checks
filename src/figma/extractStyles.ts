@@ -22,14 +22,9 @@ function round(value: number, digits: number): number {
   return Math.round(value * factor) / factor;
 }
 
-/** Depth-first search for the first TEXT node, used as the representative text style for a component. */
-function findFirstTextNode(node: FigmaNode): FigmaNode | null {
-  if (node.type === "TEXT") return node;
-  for (const child of node.children ?? []) {
-    const found = findFirstTextNode(child);
-    if (found) return found;
-  }
-  return null;
+/** Finds the first TEXT node within an (already exclusion-filtered) node list. */
+function findFirstTextNode(nodes: FigmaNode[]): FigmaNode | null {
+  return nodes.find((n) => n.type === "TEXT") ?? null;
 }
 
 interface NodeWithDepth {
@@ -41,14 +36,18 @@ interface NodeWithDepth {
  * Breadth-first list of the node and all descendants (with depth). The node you point `nodeId` at is
  * often a thin wrapper (especially for component instances) — the real fills/radius/padding are
  * frequently one or two levels deeper on an inner frame, so callers scan this list for the first
- * match instead of only trusting the exact node.
+ * match instead of only trusting the exact node. Any subtree rooted at a layer named
+ * `excludeLayerName` (case-insensitive) is skipped entirely — useful when a nested layer (e.g. a
+ * reused text-block component) has its own unrelated padding/gap that would otherwise win the scan.
  */
-function collectNodesBreadthFirst(root: FigmaNode): NodeWithDepth[] {
+function collectNodesBreadthFirst(root: FigmaNode, excludeLayerName?: string): NodeWithDepth[] {
+  const excludeTarget = excludeLayerName?.trim().toLowerCase();
   const result: NodeWithDepth[] = [{ node: root, depth: 0 }];
   const queue: NodeWithDepth[] = [result[0]];
   while (queue.length > 0) {
     const current = queue.shift() as NodeWithDepth;
     for (const child of current.node.children ?? []) {
+      if (excludeTarget && child.name.trim().toLowerCase() === excludeTarget) continue;
       const entry: NodeWithDepth = { node: child, depth: current.depth + 1 };
       result.push(entry);
       queue.push(entry);
@@ -57,9 +56,9 @@ function collectNodesBreadthFirst(root: FigmaNode): NodeWithDepth[] {
   return result;
 }
 
-export function extractStyleTokens(node: FigmaNode): StyleToken[] {
+export function extractStyleTokens(node: FigmaNode, excludeLayerName?: string): StyleToken[] {
   const tokens: StyleToken[] = [];
-  const entries = collectNodesBreadthFirst(node);
+  const entries = collectNodesBreadthFirst(node, excludeLayerName);
   const nodes = entries.map((e) => e.node);
 
   const fillNode = nodes.find((n) => n.fills?.some((f) => paintToRgba(f) != null));
@@ -96,7 +95,7 @@ export function extractStyleTokens(node: FigmaNode): StyleToken[] {
     tokens.push({ property: "gap", value: `${layoutNode.itemSpacing ?? 0}px` });
   }
 
-  const textNode = findFirstTextNode(node);
+  const textNode = findFirstTextNode(nodes);
   if (textNode?.style) {
     const { fontFamily, fontWeight, fontSize, lineHeightPx, letterSpacing } = textNode.style;
     if (fontFamily) tokens.push({ property: "fontFamily", value: fontFamily });

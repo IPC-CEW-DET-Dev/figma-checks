@@ -2,21 +2,33 @@
   "fontAliasOverrides": {},
   "components": [
     {
-      "name": "Accordion Header",
-      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55547:11322" },
+      "name": "Accordion Closed",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55565:1021" },
       "production": {
-        "url": "https://www.everbank.com/support/personal/getting-started/open-an-account",
-        "selector": "[class$=\"accordion-block__panel\"]",
+        "url": "https://www.everbank.com/banking/money-market",
+        "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]",
         "excludeSelector": "[class$=\"accordion-block__panel-content\"]"
       }
     },
     {
-      "name": "Accordion Body",
-      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "1612:15581" },
+      "name": "Accordion Open",
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55565:1037" },
       "production": {
-        "url": "https://www.everbank.com/banking/cdars-cd?openPanel=renewal-requests#renewal-requests",
-        "selector": "[class$=\"accordion-block__panel-content\"][id$=\"renewal-requests\"]"
-      }
+        "url": "https://www.everbank.com/banking/money-market?openPanel=access-money#access-money",
+        "selector": "[class$=\"accordion-block__panel\"][id$=\"access-money\"]"
+      },
+      "parts": [
+        {
+          "name": "Header",
+          "figma": { "layerName": "Accordion Header" },
+          "production": { "selector": "[id$=\"access-money\"] [class*=\"accordion-block__panel-header\"]" }
+        },
+        {
+          "name": "Body",
+          "figma": { "layerName": "Accordion Body", "excludeLayerName": "Standard Text Block" },
+          "production": { "selector": "[class$=\"accordion-block__panel-content\"][id$=\"access-money\"]", "excludeSelector": "[class*=\"text-block\"]" }
+        }
+      ]
     }
   ]
 }

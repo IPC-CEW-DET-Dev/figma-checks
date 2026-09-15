@@ -38,6 +38,16 @@ program
         const location = diff.actualSource ? ` (found on ${chalk.cyan(diff.actualSource)})` : "";
         console.log(chalk.yellow(`       ${diff.property}: expected "${diff.expected}", got "${diff.actual}"${location}`));
       }
+      for (const part of result.parts) {
+        if (part.error) {
+          console.log(chalk.red(`       [${part.name}] ${part.error}`));
+          continue;
+        }
+        for (const diff of part.styleDiffs.filter((d) => !d.pass)) {
+          const location = diff.actualSource ? ` (found on ${chalk.cyan(diff.actualSource)})` : "";
+          console.log(chalk.yellow(`       [${part.name}] ${diff.property}: expected "${diff.expected}", got "${diff.actual}"${location}`));
+        }
+      }
     }
 
     console.log("");

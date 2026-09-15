@@ -28,6 +28,14 @@ export async function loadConfig(configPath = "components.config.json"): Promise
     if (!component.production?.url || !component.production?.selector) {
       throw new Error(`Component "${component.name}" is missing required "production.url"/"production.selector".`);
     }
+    for (const part of component.parts ?? []) {
+      if (!part.name || !(part.figma?.layerName || part.figma?.nodeId)) {
+        throw new Error(`Part in "${component.name}" is missing required "name" or "figma.layerName"/"figma.nodeId": ${JSON.stringify(part)}`);
+      }
+      if (!part.production?.selector) {
+        throw new Error(`Part "${part.name}" in "${component.name}" is missing required "production.selector".`);
+      }
+    }
   }
 
   return { manifest, figmaToken };

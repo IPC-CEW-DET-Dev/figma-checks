@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { RunResult } from "../types.js";
+import type { ComponentPartResult, RunResult, StyleDiffEntry } from "../types.js";
 import { isComponentPassing } from "./summary.js";
 
 function escapeHtml(value: string): string {
@@ -9,6 +9,46 @@ function escapeHtml(value: string): string {
 
 function relative(outputDir: string, filePath: string): string {
   return path.relative(outputDir, filePath);
+}
+
+function renderPartMeta(part: ComponentPartResult): string {
+  const figmaRef = part.figma.layerName
+    ? `layer <code>${escapeHtml(part.figma.layerName)}</code>`
+    : part.figma.nodeId
+      ? `node <code>${escapeHtml(part.figma.nodeId)}</code>`
+      : "—";
+  const figmaExclude = part.figma.excludeLayerName
+    ? ` <span class="meta-note">(excluding layer <code>${escapeHtml(part.figma.excludeLayerName)}</code>)</span>`
+    : "";
+  const selectorExclude = part.production.excludeSelector
+    ? ` <span class="meta-note">(excluding <code>${escapeHtml(part.production.excludeSelector)}</code>)</span>`
+    : "";
+
+  return `
+    <p class="part-meta">
+      Figma: ${figmaRef}${figmaExclude} &middot; Selector: <code>${escapeHtml(part.production.selector)}</code>${selectorExclude}
+    </p>`;
+}
+
+function renderStyleTable(styleDiffs: StyleDiffEntry[]): string {
+  const rows = styleDiffs
+    .map(
+      (d) => `
+      <tr class="${d.pass ? "pass" : "fail"}">
+        <td>${escapeHtml(d.property)}</td>
+        <td><code>${escapeHtml(d.expected ?? "—")}</code></td>
+        <td><code>${escapeHtml(d.actual ?? "—")}</code></td>
+        <td class="status-cell">${d.pass ? "✓" : "✗"}</td>
+      </tr>`
+    )
+    .join("");
+
+  return `
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 export async function generateReport(run: RunResult, thresholdPercent: number): Promise<string> {
@@ -24,7 +64,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
       const figmaUrl = `https://www.figma.com/design/${result.figma.fileKey}?node-id=${nodeIdUrlSafe}`;
       const metadata = `
         <dl class="meta">
-          <div class="meta-row"><dt>Figma</dt><dd><a href="${escapeHtml(figmaUrl)}" target="_blank" rel="noopener">${escapeHtml(result.figma.fileKey)} / ${escapeHtml(result.figma.nodeId)}</a>${result.figma.variantName ? ` <span class="meta-note">(variant: ${escapeHtml(result.figma.variantName)})</span>` : ""}</dd></div>
+          <div class="meta-row"><dt>Figma</dt><dd><a href="${escapeHtml(figmaUrl)}" target="_blank" rel="noopener">${escapeHtml(result.figma.fileKey)} / ${escapeHtml(result.figma.nodeId)}</a>${result.figma.variantName ? ` <span class="meta-note">(variant: ${escapeHtml(result.figma.variantName)})</span>` : ""}${result.figma.excludeLayerName ? `<br><span class="meta-note">excluding layer <code>${escapeHtml(result.figma.excludeLayerName)}</code></span>` : ""}</dd></div>
           <div class="meta-row"><dt>Production</dt><dd><a href="${escapeHtml(result.production.url)}" target="_blank" rel="noopener">${escapeHtml(result.production.url)}</a></dd></div>
           <div class="meta-row"><dt>Selector</dt><dd><code>${escapeHtml(result.production.selector)}</code>${result.production.excludeSelector ? `<br><span class="meta-note">excluding <code>${escapeHtml(result.production.excludeSelector)}</code></span>` : ""}</dd></div>
         </dl>`;
@@ -52,15 +92,14 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
         </div>`
         : "";
 
-      const rows = result.styleDiffs
+      const partSections = result.parts
         .map(
-          (d) => `
-          <tr class="${d.pass ? "pass" : "fail"}">
-            <td>${escapeHtml(d.property)}</td>
-            <td><code>${escapeHtml(d.expected ?? "—")}</code></td>
-            <td><code>${escapeHtml(d.actual ?? "—")}</code></td>
-            <td class="status-cell">${d.pass ? "✓" : "✗"}</td>
-          </tr>`
+          (part) => `
+          <div class="part">
+            <h3>${escapeHtml(part.name)}</h3>
+            ${renderPartMeta(part)}
+            ${part.error ? `<p class="error">Error: ${escapeHtml(part.error)}</p>` : renderStyleTable(part.styleDiffs)}
+          </div>`
         )
         .join("");
 
@@ -76,11 +115,8 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
             ${metadata}
           </div>
           <div class="details">
-            <table>
-              <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
-              <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
-              <tbody>${rows}</tbody>
-            </table>
+            ${renderStyleTable(result.styleDiffs)}
+            ${partSections}
           </div>
         </div>
       </section>`;
@@ -172,6 +208,9 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
   tr.pass .status-cell { color: var(--pass); }
   tr.fail .status-cell { color: var(--fail); }
   .error { color: var(--fail); font-size: 0.9rem; }
+  .part { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+  .part h3 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 0.6rem; }
+  .part-meta { font-size: 0.8rem; color: var(--muted); margin: -0.3rem 0 0.75rem; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>

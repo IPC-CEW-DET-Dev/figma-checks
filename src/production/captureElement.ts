@@ -43,8 +43,8 @@ export async function captureElement(
         // The matched selector is often a bare layout wrapper — the real design tokens (background,
         // padding, font, etc.) usually live on a styled descendant, so scan the subtree for overrides.
         // Traversal is breadth-first (nearby overrides win over distant ones), and any subtree matching
-        // `excludeSelector` is skipped entirely — useful when the matched element also wraps an
-        // unrelated sibling section (e.g. a header wrapper that also contains a collapsible panel).
+        // `excludeSelector` is skipped entirely for ALL properties — useful when that subtree belongs
+        // to a different logical section being tested separately (e.g. a shared text-block component).
         // Named helper functions are avoided here: esbuild's dev transform wraps them in a `__name()`
         // call that isn't defined once this callback is serialized into the browser page context.
         const elements: Element[] = [root];
@@ -75,7 +75,26 @@ export async function captureElement(
         const rootStyle = styles[0];
         const merged: Record<string, string> = { ...rootStyle };
         const sources: Record<string, string> = {};
+
+        // Only look at descendants for box-model properties when the matched element's OWN value is
+        // still an unset default — if the element already carries a real value (e.g. a button with its
+        // own 24px padding), trust it rather than letting some incidental inner wrapper (with 0px, say)
+        // "override" a value that was already correct.
+        const BOX_PROPERTY_DEFAULTS: Record<string, string> = {
+          backgroundColor: "rgba(0, 0, 0, 0)",
+          borderRadius: "0px",
+          boxShadow: "none",
+          paddingTop: "0px",
+          paddingRight: "0px",
+          paddingBottom: "0px",
+          paddingLeft: "0px",
+          gap: "normal",
+        };
+
         for (const prop of PROPERTIES) {
+          const boxDefault = BOX_PROPERTY_DEFAULTS[prop];
+          if (boxDefault != null && rootStyle[prop] !== boxDefault) continue;
+
           const overrideIndex = styles.findIndex((d, i) => i > 0 && d[prop] !== rootStyle[prop]);
           if (overrideIndex > 0) {
             merged[prop] = styles[overrideIndex][prop];

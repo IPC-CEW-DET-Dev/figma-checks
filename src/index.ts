@@ -1,11 +1,13 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import type { Browser } from "playwright";
 import type { AppConfig } from "./config/loadConfig.js";
-import type { ComponentResult, RunResult } from "./types.js";
+import type { ComponentPartResult, ComponentResult, ComponentSpec, RunResult } from "./types.js";
 import { FigmaClient } from "./figma/client.js";
+import type { FigmaNode } from "./figma/client.js";
 import { extractStyleTokens } from "./figma/extractStyles.js";
 import { exportFigmaImage } from "./figma/exportImage.js";
-import { resolveComponentVariant } from "./figma/resolveVariant.js";
+import { resolveComponentVariant, findNodeByName } from "./figma/resolveVariant.js";
 import { launchBrowser, newContext } from "./production/browser.js";
 import { captureElement } from "./production/captureElement.js";
 import { diffStyleTokens } from "./diff/styleDiff.js";
@@ -79,7 +81,7 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
       try {
         const figmaNode = await figmaClient.getNode(component.figma.fileKey, component.figma.nodeId);
         const variantNode = resolveComponentVariant(figmaNode, component.figma.variantName);
-        const expectedTokens = extractStyleTokens(variantNode);
+        const expectedTokens = extractStyleTokens(variantNode, component.figma.excludeLayerName);
         const figmaImagePath = await exportFigmaImage(
           figmaClient,
           component.figma.fileKey,
@@ -108,11 +110,14 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
           path.join(componentDir, "diff.png")
         );
 
+        const parts = await runParts(component, variantNode, figmaClient, browser, componentDir, config.manifest.fontAliasOverrides);
+
         results.push({
           name: component.name,
           figma: component.figma,
           production: component.production,
           styleDiffs,
+          parts,
           images: {
             figmaImagePath,
             productionImagePath: captureResult.screenshotPath,
@@ -126,6 +131,7 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
           figma: component.figma,
           production: component.production,
           styleDiffs: [],
+          parts: [],
           images: null,
           error: describeError(err),
         });
@@ -136,4 +142,56 @@ export async function runComparison(config: AppConfig, options: RunOptions = {})
   }
 
   return { timestamp, displayTimestamp, outputDir, components: results };
+}
+
+/** Runs each declared sub-section independently, so composite components get unambiguous per-part style diffs. */
+async function runParts(
+  component: ComponentSpec,
+  parentFigmaNode: FigmaNode,
+  figmaClient: FigmaClient,
+  browser: Browser,
+  componentDir: string,
+  fontAliasOverrides: Record<string, string> | undefined
+): Promise<ComponentPartResult[]> {
+  const results: ComponentPartResult[] = [];
+
+  for (const part of component.parts ?? []) {
+    try {
+      let partNode: FigmaNode;
+      if (part.figma.layerName) {
+        const found = findNodeByName(parentFigmaNode, part.figma.layerName);
+        if (!found) {
+          throw new Error(`No layer named "${part.figma.layerName}" found within "${component.name}"'s Figma node.`);
+        }
+        partNode = found;
+      } else if (part.figma.nodeId) {
+        const figmaNode = await figmaClient.getNode(component.figma.fileKey, part.figma.nodeId);
+        partNode = resolveComponentVariant(figmaNode, part.figma.variantName);
+      } else {
+        throw new Error(`Part "${part.name}" must specify figma.layerName or figma.nodeId.`);
+      }
+      const expectedTokens = extractStyleTokens(partNode, part.figma.excludeLayerName);
+
+      const context = await newContext(browser, component.viewport);
+      let captureResult;
+      try {
+        captureResult = await captureElement(
+          context,
+          component.production.url,
+          part.production.selector,
+          path.join(componentDir, `part-${sanitizeName(part.name)}.png`),
+          part.production.excludeSelector
+        );
+      } finally {
+        await context.close();
+      }
+
+      const styleDiffs = diffStyleTokens(expectedTokens, captureResult.tokens, fontAliasOverrides);
+      results.push({ name: part.name, figma: part.figma, production: part.production, styleDiffs });
+    } catch (err) {
+      results.push({ name: part.name, figma: part.figma, production: part.production, styleDiffs: [], error: describeError(err) });
+    }
+  }
+
+  return results;
 }
