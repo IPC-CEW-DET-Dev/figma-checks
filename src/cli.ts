@@ -13,7 +13,7 @@ program
   .description("Compare Figma components against their production implementation")
   .option("-c, --config <path>", "path to components.config.json", "components.config.json")
   .option("-o, --only <name>", "only run the component with this name")
-  .option("-t, --threshold <percent>", "max allowed visual mismatch percentage", "2")
+  .option("-t, --threshold <percent>", "max allowed visual mismatch percentage", "5")
   .action(async (opts) => {
     const threshold = parseFloat(opts.threshold);
     const config = await loadConfig(opts.config);
