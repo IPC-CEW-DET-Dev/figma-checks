@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Component Comparison Report — 09-15-26, 11:29am</title>
+<style>
+  :root {
+    --pass: #1e8e5a;
+    --pass-bg: #e8f7ef;
+    --fail: #c62a2a;
+    --fail-bg: #fdeceb;
+    --border: #e3e6ea;
+    --text: #1a1d21;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: #f4f5f7;
+    margin: 0;
+    padding: 3rem 2rem;
+  }
+  .page { max-width: 1180px; margin: 0 auto; }
+  .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; }
+  h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; }
+  .run-meta { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+  .summary-pill {
+    font-size: 0.9rem; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 999px;
+    background: var(--fail-bg);
+    color: var(--fail);
+    white-space: nowrap;
+  }
+  .component {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .component-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+  }
+  .component-header h2 { font-size: 1.05rem; margin: 0; }
+  .status {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em;
+    padding: 0.25rem 0.6rem; border-radius: 6px;
+  }
+  .pass .status { background: var(--pass-bg); color: var(--pass); }
+  .fail .status { background: var(--fail-bg); color: var(--fail); }
+  .component-body { display: grid; grid-template-columns: 300px 1fr; gap: 0; }
+  .side { padding: 1.25rem 1.5rem; border-right: 1px solid var(--border); background: #fafbfc; }
+  .details { padding: 1.25rem 1.5rem; overflow-x: auto; }
+  .meta { margin: 0; }
+  .meta-row { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.85rem; }
+  .meta-row:last-child { margin-bottom: 0; }
+  .meta dt { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .meta dd { margin: 0; font-size: 0.85rem; overflow-wrap: anywhere; }
+  .meta a { color: #2757c9; text-decoration: none; }
+  .meta a:hover { text-decoration: underline; }
+  .meta-note { color: var(--muted); }
+  .images { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.25rem; }
+  .images figure { margin: 0; }
+  .images figcaption { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.35rem; }
+  .images img { display: block; width: 100%; border: 1px solid var(--border); border-radius: 6px; background: white; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  .col-property { width: 30%; }
+  .col-status { width: 2.5rem; }
+  th { text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border); }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+  tr.fail td:first-child { border-left: 3px solid var(--fail); }
+  tr.pass td:first-child { border-left: 3px solid var(--pass); }
+  tr.fail { background: var(--fail-bg); }
+  tr.pass td { color: var(--muted); }
+  .status-cell { text-align: center; font-weight: 700; }
+  tr.pass .status-cell { color: var(--pass); }
+  tr.fail .status-cell { color: var(--fail); }
+  .error { color: var(--fail); font-size: 0.9rem; }
+  .part { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+  .part h3 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 0.6rem; }
+  .part-meta { font-size: 0.8rem; color: var(--muted); margin: -0.3rem 0 0.75rem; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>Component Comparison Report</h1>
+        <div class="run-meta">09-15-26, 11:29am · threshold: 5% visual mismatch</div>
+      </div>
+      <span class="summary-pill">0/4 passing</span>
+    </div>
+    
+      <section class="component fail">
+        <header class="component-header">
+          <h2>Accordion Closed - desktop</h2>
+          <span class="status">FAIL</span>
+        </header>
+        <div class="component-body">
+          <div class="side">
+            
+        <div class="images">
+          <figure><figcaption>Figma</figcaption><img src="accordion-closed-desktop/figma.png" alt="Figma"></figure>
+          <figure><figcaption>Production</figcaption><img src="accordion-closed-desktop/production.png" alt="Production"></figure>
+          <figure><figcaption>Diff (3.74% mismatch)</figcaption><img src="accordion-closed-desktop/diff.png" alt="Diff"></figure>
+        </div>
+            
+        <dl class="meta">
+          <div class="meta-row"><dt>Figma</dt><dd><a href="https://www.figma.com/design/L7Khivqu9DxzckRT6WoC8C?node-id=55582-1006" target="_blank" rel="noopener">L7Khivqu9DxzckRT6WoC8C / 55582:1006</a></dd></div>
+          <div class="meta-row"><dt>Production</dt><dd><a href="https://www.everbank.com/banking/money-market" target="_blank" rel="noopener">https://www.everbank.com/banking/money-market</a></dd></div>
+          <div class="meta-row"><dt>Selector</dt><dd><code>[class$=&quot;accordion-block__panel&quot;][id$=&quot;access-money&quot;]</code><br><span class="meta-note">excluding <code>[class$=&quot;accordion-block__panel-content&quot;]</code></span></dd></div>
+        </dl>
+          </div>
+          <div class="details">
+            
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>
+      <tr class="pass">
+        <td>backgroundColor</td>
+        <td><code>rgba(249, 249, 249, 1)</code></td>
+        <td><code>rgb(249, 249, 249)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>borderRadius</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>color</td>
+        <td><code>rgba(35, 31, 32, 1)</code></td>
+        <td><code>rgb(35, 31, 32)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontFamily</td>
+        <td><code>EverType</code></td>
+        <td><code>EverType, Arial, sans-serif</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontSize</td>
+        <td><code>21px</code></td>
+        <td><code>21px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontWeight</td>
+        <td><code>700</code></td>
+        <td><code>700</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="fail">
+        <td>gap</td>
+        <td><code>48px</code></td>
+        <td><code>—</code></td>
+        <td class="status-cell">✗</td>
+      </tr>
+      <tr class="pass">
+        <td>letterSpacing</td>
+        <td><code>-0.43px</code></td>
+        <td><code>-0.43px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>lineHeight</td>
+        <td><code>28px</code></td>
+        <td><code>28px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingBottom</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingLeft</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingRight</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingTop</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr></tbody>
+    </table>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="component fail">
+        <header class="component-header">
+          <h2>Accordion Open - desktop</h2>
+          <span class="status">FAIL</span>
+        </header>
+        <div class="component-body">
+          <div class="side">
+            
+        <div class="images">
+          <figure><figcaption>Figma</figcaption><img src="accordion-open-desktop/figma.png" alt="Figma"></figure>
+          <figure><figcaption>Production</figcaption><img src="accordion-open-desktop/production.png" alt="Production"></figure>
+          <figure><figcaption>Diff (7.78% mismatch)</figcaption><img src="accordion-open-desktop/diff.png" alt="Diff"></figure>
+        </div>
+            
+        <dl class="meta">
+          <div class="meta-row"><dt>Figma</dt><dd><a href="https://www.figma.com/design/L7Khivqu9DxzckRT6WoC8C?node-id=55582-1005" target="_blank" rel="noopener">L7Khivqu9DxzckRT6WoC8C / 55582:1005</a></dd></div>
+          <div class="meta-row"><dt>Production</dt><dd><a href="https://www.everbank.com/banking/money-market?openPanel=access-money#access-money" target="_blank" rel="noopener">https://www.everbank.com/banking/money-market?openPanel=access-money#access-money</a></dd></div>
+          <div class="meta-row"><dt>Selector</dt><dd><code>[class$=&quot;accordion-block__panel&quot;][id$=&quot;access-money&quot;]</code></dd></div>
+        </dl>
+          </div>
+          <div class="details">
+            
+            
+          <div class="part">
+            <h3>Header</h3>
+            
+    <p class="part-meta">
+      Figma: layer <code>Accordion Header</code> &middot; Selector: <code>[id$=&quot;access-money&quot;] [class*=&quot;accordion-block__panel-header&quot;]</code>
+    </p>
+            
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>
+      <tr class="pass">
+        <td>backgroundColor</td>
+        <td><code>rgba(255, 255, 255, 1)</code></td>
+        <td><code>rgb(255, 255, 255)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>borderRadius</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>color</td>
+        <td><code>rgba(35, 31, 32, 1)</code></td>
+        <td><code>rgb(35, 31, 32)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontFamily</td>
+        <td><code>EverType</code></td>
+        <td><code>EverType, Arial, sans-serif</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontSize</td>
+        <td><code>21px</code></td>
+        <td><code>21px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontWeight</td>
+        <td><code>700</code></td>
+        <td><code>700</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="fail">
+        <td>gap</td>
+        <td><code>48px</code></td>
+        <td><code>—</code></td>
+        <td class="status-cell">✗</td>
+      </tr>
+      <tr class="pass">
+        <td>letterSpacing</td>
+        <td><code>-0.43px</code></td>
+        <td><code>-0.43px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>lineHeight</td>
+        <td><code>28px</code></td>
+        <td><code>28px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingBottom</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingLeft</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingRight</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingTop</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr></tbody>
+    </table>
+          </div>
+          <div class="part">
+            <h3>Body</h3>
+            
+    <p class="part-meta">
+      Figma: layer <code>Accordion Body</code> <span class="meta-note">(excluding layer <code>Standard Text Block</code>)</span> &middot; Selector: <code>[class$=&quot;accordion-block__panel-content&quot;][id$=&quot;access-money&quot;]</code> <span class="meta-note">(excluding <code>[class*=&quot;text-block&quot;]</code>)</span>
+    </p>
+            
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>
+      <tr class="pass">
+        <td>backgroundColor</td>
+        <td><code>rgba(255, 255, 255, 1)</code></td>
+        <td><code>rgb(255, 255, 255)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>borderRadius</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingBottom</td>
+        <td><code>48px</code></td>
+        <td><code>48px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingLeft</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingRight</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingTop</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr></tbody>
+    </table>
+          </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="component fail">
+        <header class="component-header">
+          <h2>Accordion Closed - mobile</h2>
+          <span class="status">FAIL</span>
+        </header>
+        <div class="component-body">
+          <div class="side">
+            
+        <div class="images">
+          <figure><figcaption>Figma</figcaption><img src="accordion-closed-mobile/figma.png" alt="Figma"></figure>
+          <figure><figcaption>Production</figcaption><img src="accordion-closed-mobile/production.png" alt="Production"></figure>
+          <figure><figcaption>Diff (9.63% mismatch)</figcaption><img src="accordion-closed-mobile/diff.png" alt="Diff"></figure>
+        </div>
+            
+        <dl class="meta">
+          <div class="meta-row"><dt>Figma</dt><dd><a href="https://www.figma.com/design/L7Khivqu9DxzckRT6WoC8C?node-id=55565-1021" target="_blank" rel="noopener">L7Khivqu9DxzckRT6WoC8C / 55565:1021</a></dd></div>
+          <div class="meta-row"><dt>Production</dt><dd><a href="https://www.everbank.com/banking/money-market" target="_blank" rel="noopener">https://www.everbank.com/banking/money-market</a></dd></div>
+          <div class="meta-row"><dt>Selector</dt><dd><code>[class$=&quot;accordion-block__panel&quot;][id$=&quot;access-money&quot;]</code><br><span class="meta-note">excluding <code>[class$=&quot;accordion-block__panel-content&quot;]</code></span></dd></div>
+        </dl>
+          </div>
+          <div class="details">
+            
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>
+      <tr class="pass">
+        <td>backgroundColor</td>
+        <td><code>rgba(249, 249, 249, 1)</code></td>
+        <td><code>rgb(249, 249, 249)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>borderRadius</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>color</td>
+        <td><code>rgba(35, 31, 32, 1)</code></td>
+        <td><code>rgb(35, 31, 32)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontFamily</td>
+        <td><code>EverType</code></td>
+        <td><code>EverType, Arial, sans-serif</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontSize</td>
+        <td><code>18px</code></td>
+        <td><code>18px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontWeight</td>
+        <td><code>700</code></td>
+        <td><code>700</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="fail">
+        <td>gap</td>
+        <td><code>32px</code></td>
+        <td><code>—</code></td>
+        <td class="status-cell">✗</td>
+      </tr>
+      <tr class="pass">
+        <td>letterSpacing</td>
+        <td><code>-0.38px</code></td>
+        <td><code>-0.38px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>lineHeight</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingBottom</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingLeft</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingRight</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingTop</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr></tbody>
+    </table>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="component fail">
+        <header class="component-header">
+          <h2>Accordion Open - mobile</h2>
+          <span class="status">FAIL</span>
+        </header>
+        <div class="component-body">
+          <div class="side">
+            
+        <div class="images">
+          <figure><figcaption>Figma</figcaption><img src="accordion-open-mobile/figma.png" alt="Figma"></figure>
+          <figure><figcaption>Production</figcaption><img src="accordion-open-mobile/production.png" alt="Production"></figure>
+          <figure><figcaption>Diff (12.98% mismatch)</figcaption><img src="accordion-open-mobile/diff.png" alt="Diff"></figure>
+        </div>
+            
+        <dl class="meta">
+          <div class="meta-row"><dt>Figma</dt><dd><a href="https://www.figma.com/design/L7Khivqu9DxzckRT6WoC8C?node-id=55565-1037" target="_blank" rel="noopener">L7Khivqu9DxzckRT6WoC8C / 55565:1037</a></dd></div>
+          <div class="meta-row"><dt>Production</dt><dd><a href="https://www.everbank.com/banking/money-market?openPanel=access-money#access-money" target="_blank" rel="noopener">https://www.everbank.com/banking/money-market?openPanel=access-money#access-money</a></dd></div>
+          <div class="meta-row"><dt>Selector</dt><dd><code>[class$=&quot;accordion-block__panel&quot;][id$=&quot;access-money&quot;]</code></dd></div>
+        </dl>
+          </div>
+          <div class="details">
+            
+            
+          <div class="part">
+            <h3>Header</h3>
+            
+    <p class="part-meta">
+      Figma: layer <code>Accordion Header</code> &middot; Selector: <code>[id$=&quot;access-money&quot;] [class*=&quot;accordion-block__panel-header&quot;]</code>
+    </p>
+            
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>
+      <tr class="pass">
+        <td>backgroundColor</td>
+        <td><code>rgba(255, 255, 255, 1)</code></td>
+        <td><code>rgb(255, 255, 255)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>borderRadius</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>color</td>
+        <td><code>rgba(35, 31, 32, 1)</code></td>
+        <td><code>rgb(35, 31, 32)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontFamily</td>
+        <td><code>EverType</code></td>
+        <td><code>EverType, Arial, sans-serif</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontSize</td>
+        <td><code>18px</code></td>
+        <td><code>18px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>fontWeight</td>
+        <td><code>700</code></td>
+        <td><code>700</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="fail">
+        <td>gap</td>
+        <td><code>32px</code></td>
+        <td><code>—</code></td>
+        <td class="status-cell">✗</td>
+      </tr>
+      <tr class="pass">
+        <td>letterSpacing</td>
+        <td><code>-0.38px</code></td>
+        <td><code>-0.38px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>lineHeight</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingBottom</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingLeft</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingRight</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingTop</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr></tbody>
+    </table>
+          </div>
+          <div class="part">
+            <h3>Body</h3>
+            
+    <p class="part-meta">
+      Figma: layer <code>Accordion Body</code> <span class="meta-note">(excluding layer <code>Standard Text Block</code>)</span> &middot; Selector: <code>[class$=&quot;accordion-block__panel-content&quot;][id$=&quot;access-money&quot;]</code> <span class="meta-note">(excluding <code>[class*=&quot;text-block&quot;]</code>)</span>
+    </p>
+            
+    <table>
+      <colgroup><col class="col-property"><col class="col-value"><col class="col-value"><col class="col-status"></colgroup>
+      <thead><tr><th>Property</th><th>Figma (expected)</th><th>Production (actual)</th><th></th></tr></thead>
+      <tbody>
+      <tr class="pass">
+        <td>backgroundColor</td>
+        <td><code>rgba(255, 255, 255, 1)</code></td>
+        <td><code>rgb(255, 255, 255)</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>borderRadius</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingBottom</td>
+        <td><code>24px</code></td>
+        <td><code>24px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingLeft</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingRight</td>
+        <td><code>16px</code></td>
+        <td><code>16px</code></td>
+        <td class="status-cell">✓</td>
+      </tr>
+      <tr class="pass">
+        <td>paddingTop</td>
+        <td><code>0px</code></td>
+        <td><code>0px</code></td>
+        <td class="status-cell">✓</td>
+      </tr></tbody>
+    </table>
+          </div>
+          </div>
+        </div>
+      </section>
+  </div>
+</body>
+</html>

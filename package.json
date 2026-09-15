@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "compare": "tsx src/cli.ts",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish-report": "tsx scripts/publish-report.ts"
   },
   "keywords": [],
   "author": "",

@@ -61,3 +61,15 @@ npm run compare -- --threshold 5     # allow up to 5% visual mismatch (default 2
 ```
 
 Output is written to `reports/<timestamp>/report.html`, with per-component metadata, side-by-side Figma/production screenshots, a pixel-diff overlay, and a style-token pass/fail table. The command exits non-zero if any component has a failing style token, exceeds the visual mismatch threshold, or errors, so it can be wired into CI later.
+
+## Publishing the latest report (GitHub Pages)
+
+`reports/<timestamp>/` is gitignored (each run generates a new timestamped folder, and images shouldn't bloat the repo), so GitHub Pages can't serve it directly. `npm run publish-report` copies the most recent run into a stable, committed path — `docs/reports/` — that always reflects the latest run, so the published URL never changes.
+
+```
+npm run compare
+npm run publish-report
+git add docs && git commit -m "Publish latest report" && git push
+```
+
+One-time setup: in the repo's GitHub Settings → Pages, set **Source** to "Deploy from a branch", **Branch** to `main`, **Folder** to `/docs`. The report will then be available at `https://<org>.github.io/<repo>/reports/`.
