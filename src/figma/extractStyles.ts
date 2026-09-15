@@ -92,7 +92,11 @@ export function extractStyleTokens(node: FigmaNode, excludeLayerName?: string): 
     tokens.push({ property: "paddingRight", value: `${layoutNode.paddingRight ?? 0}px` });
     tokens.push({ property: "paddingBottom", value: `${layoutNode.paddingBottom ?? 0}px` });
     tokens.push({ property: "paddingLeft", value: `${layoutNode.paddingLeft ?? 0}px` });
-    tokens.push({ property: "gap", value: `${layoutNode.itemSpacing ?? 0}px` });
+    // Figma omits `itemSpacing` entirely when gap is set to "Auto" (space-between distribution,
+    // no fixed value) — treat that absence as "not applicable" rather than defaulting to 0px.
+    if (layoutNode.itemSpacing != null) {
+      tokens.push({ property: "gap", value: `${layoutNode.itemSpacing}px` });
+    }
   }
 
   const textNode = findFirstTextNode(nodes);
