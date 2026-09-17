@@ -56,12 +56,26 @@ function collectNodesBreadthFirst(root: FigmaNode, excludeLayerName?: string): N
   return result;
 }
 
+/** True for icon-style instances (all children are plain vector shapes) — their `fills` tint the
+ *  icon glyph, not a container background/radius/shadow, so they'd otherwise be mistaken for one. */
+function isIconNode(node: FigmaNode): boolean {
+  const children = node.children ?? [];
+  return children.length > 0 && children.every((c) => c.type === "VECTOR");
+}
+
 export function extractStyleTokens(node: FigmaNode, excludeLayerName?: string): StyleToken[] {
   const tokens: StyleToken[] = [];
-  const entries = collectNodesBreadthFirst(node, excludeLayerName);
+  // VECTOR nodes are icon/shape artwork (their fills/strokes draw the graphic itself, e.g. an "X"
+  // icon drawn with strokes) — never meaningful container styling, so they're excluded alongside
+  // icon-wrapper instances.
+  const entries = collectNodesBreadthFirst(node, excludeLayerName).filter(
+    (e) => !isIconNode(e.node) && e.node.type !== "VECTOR"
+  );
   const nodes = entries.map((e) => e.node);
 
-  const fillNode = nodes.find((n) => n.fills?.some((f) => paintToRgba(f) != null));
+  // TEXT nodes are excluded here — their `fills` is font color (handled separately below via
+  // findFirstTextNode), not a container background.
+  const fillNode = nodes.find((n) => n.type !== "TEXT" && n.fills?.some((f) => paintToRgba(f) != null));
   const fillColor = fillNode?.fills?.map(paintToRgba).find((c) => c != null);
   if (fillColor) tokens.push({ property: "backgroundColor", value: fillColor });
 
@@ -73,6 +87,14 @@ export function extractStyleTokens(node: FigmaNode, excludeLayerName?: string): 
   const shadowNode = nodes.find((n) => n.effects?.some((e) => effectToBoxShadow(e) != null));
   const shadow = shadowNode?.effects?.map(effectToBoxShadow).find((s) => s != null);
   if (shadow) tokens.push({ property: "boxShadow", value: shadow });
+
+  const strokeNode = nodes.find((n) => (n.strokeWeight ?? 0) > 0 && n.strokes?.some((s) => paintToRgba(s) != null));
+  if (strokeNode) {
+    const strokeColor = strokeNode.strokes?.map(paintToRgba).find((c) => c != null);
+    if (strokeColor) {
+      tokens.push({ property: "border", value: `${strokeNode.strokeWeight}px solid ${strokeColor}` });
+    }
+  }
 
   // Components often nest multiple auto-layout frames — e.g. an instance root that just hugs a single
   // child, plus that child's own auto-layout frame with the real padding. Both can end up the same
@@ -96,6 +118,11 @@ export function extractStyleTokens(node: FigmaNode, excludeLayerName?: string): 
     // no fixed value) — push a recognizable sentinel so styleDiff can skip it outright, rather than
     // silently having no gap token at all (which would default to "0px" and hide a real difference).
     tokens.push({ property: "gap", value: layoutNode.itemSpacing != null ? `${layoutNode.itemSpacing}px` : "auto" });
+  }
+
+  if (rootBox) {
+    tokens.push({ property: "width", value: `${Math.round(rootBox.width)}px` });
+    tokens.push({ property: "height", value: `${Math.round(rootBox.height)}px` });
   }
 
   const textNode = findFirstTextNode(nodes);

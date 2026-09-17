@@ -85,6 +85,7 @@ export interface FigmaNode {
   type: string;
   fills?: FigmaPaint[];
   strokes?: FigmaPaint[];
+  strokeWeight?: number;
   effects?: FigmaEffect[];
   cornerRadius?: number;
   style?: FigmaTypeStyle;

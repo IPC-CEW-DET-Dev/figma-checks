@@ -71,24 +71,28 @@
     },
         {
       "name": "Alert Block - page",
-      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55594:1867" },
+      "figma": { "fileKey": "L7Khivqu9DxzckRT6WoC8C", "nodeId": "55633:791" },
       "production": {
         "url": "https://www.everbank.com/",
-        "selector": "[class$=\"alert-block\"]",
-        "excludeSelector": "[class$=\"alert-block__close\"]"
+        "selector": "[class$=\"alert-block\"]"
       },
       "viewport": "desktop",
-      "hideGeneralTable": true,
+      "hideGeneralTable": false,
       "parts": [
         {
-          "name": "Close Button",
-          "figma": { "nodeId": "I55594:1867;2422:21695" },
-          "production": { "selector": "[class$=\"alert-block__close\"]" }
+          "name": "Body",
+          "figma": { "layerName": "alert-block__body" },
+          "production": { "selector": "[class$=\"alert-block__body\"]" }
         },
         {
-          "name": "Body",
-          "figma": { "layerName": "Alert Body" },
-          "production": { "selector": "[class$=\"alert-block__body\"]" }
+          "name": "Flank",
+          "figma": { "layerName": "alert-block__flank" },
+          "production": { "selector": "[class$=\"alert-block__flank\"]" }
+        },
+        {
+          "name": "Close Button",
+          "figma": { "layerName": "alert-block__close" },
+          "production": { "selector": "[class$=\"alert-block__close\"]" }
         }
       ]
     }

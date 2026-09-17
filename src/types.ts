@@ -44,12 +44,15 @@ export type StylePropertyName =
   | "lineHeight"
   | "letterSpacing"
   | "borderRadius"
+  | "border"
   | "boxShadow"
   | "paddingTop"
   | "paddingRight"
   | "paddingBottom"
   | "paddingLeft"
-  | "gap";
+  | "gap"
+  | "width"
+  | "height";
 
 /** A single style value pulled from either Figma or the production DOM, in a shared shape. */
 export interface StyleToken {

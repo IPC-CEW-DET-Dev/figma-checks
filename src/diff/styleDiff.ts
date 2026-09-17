@@ -1,5 +1,5 @@
 import type { StyleDiffEntry, StylePropertyName, StyleToken } from "../types.js";
-import { boxShadowsMatch, colorsMatch, fontFamiliesMatch, pxValuesMatch } from "./normalize.js";
+import { bordersMatch, boxShadowsMatch, colorsMatch, fontFamiliesMatch, pxValuesMatch } from "./normalize.js";
 
 const PX_PROPERTIES = new Set<StylePropertyName>([
   "fontSize",
@@ -11,36 +11,35 @@ const PX_PROPERTIES = new Set<StylePropertyName>([
   "paddingBottom",
   "paddingLeft",
   "gap",
+  "width",
+  "height",
 ]);
 const COLOR_PROPERTIES = new Set<StylePropertyName>(["color", "backgroundColor"]);
 
-// Figma omits these when there's genuinely nothing to compare (no auto-layout, no text layer) —
-// there's no ground truth, so we skip the check rather than reporting a false failure.
-const SKIP_WHEN_EXPECTED_MISSING = new Set<StylePropertyName>([
-  "paddingTop",
-  "paddingRight",
-  "paddingBottom",
-  "paddingLeft",
-  "color",
-  "fontFamily",
-  "fontSize",
-  "fontWeight",
-  "lineHeight",
-  "letterSpacing",
-]);
-
-// For these, an absent Figma value has a well-defined visual meaning (no fill/radius/shadow/gap), so
-// we still compare against that implicit default instead of skipping — catches unintended production
-// styling (e.g. production adding spacing that the design never called for).
+// For these, an absent Figma value has a well-defined visual meaning (no fill/radius/shadow/gap/
+// border), so a real production value is still compared against that implicit default rather than
+// left blank — this is only used for *display*: both sides are already filtered upstream (Figma
+// extraction only pushes tokens it actually found; production capture only keeps values that are
+// set away from the browser default), so a property only reaches this diff at all when at least
+// one side has something real to say.
 const ASSUMED_FIGMA_DEFAULTS: Partial<Record<StylePropertyName, string>> = {
   backgroundColor: "rgba(0, 0, 0, 0)",
   borderRadius: "0px",
+  border: "none",
   boxShadow: "none",
   gap: "0px",
 };
 
 function tokensToMap(tokens: StyleToken[]): Map<StylePropertyName, string> {
   return new Map(tokens.map((t) => [t.property, t.value]));
+}
+
+// Different "nothing here" spellings across Figma/CSS (no fill vs 0px vs none vs the browser's
+// unset default, plus the common `background: 0 0` position-only reset) shouldn't count as a
+// mismatch against each other.
+const NONE_LIKE_VALUES = new Set(["none", "normal", "0px", "0 0", "rgba(0, 0, 0, 0)", "transparent"]);
+function isNoneLike(value: string | null): boolean {
+  return value == null || NONE_LIKE_VALUES.has(value);
 }
 
 function sourcesToMap(tokens: StyleToken[]): Map<StylePropertyName, string> {
@@ -60,11 +59,15 @@ function propertiesMatch(
   if (PX_PROPERTIES.has(property)) return pxValuesMatch(expected, actual);
   if (property === "fontFamily") return fontFamiliesMatch(expected, actual, fontAliasOverrides);
   if (property === "boxShadow") return boxShadowsMatch(expected, actual);
+  if (property === "border") return bordersMatch(expected, actual);
   if (property === "fontWeight") return expected === actual;
   return expected === actual;
 }
 
-/** Compares Figma-derived tokens (expected) against production computed styles (actual). */
+/** Compares Figma-derived tokens (expected) against production computed styles (actual). Both
+ *  sides are pre-filtered to "real" values only (see figma/extractStyles.ts and
+ *  production/captureElement.ts), so a property showing up here means Figma set it, production set
+ *  it, or both — nothing shows purely because a default sentinel was assumed. */
 export function diffStyleTokens(
   expectedTokens: StyleToken[],
   actualTokens: StyleToken[],
@@ -84,15 +87,21 @@ export function diffStyleTokens(
     if (property === "gap" && expected === "auto") continue;
 
     if (expected == null) {
-      if (SKIP_WHEN_EXPECTED_MISSING.has(property)) continue;
-      expected = ASSUMED_FIGMA_DEFAULTS[property] ?? null;
+      const assumedDefault = ASSUMED_FIGMA_DEFAULTS[property];
+      if (assumedDefault != null) expected = assumedDefault;
     }
+
+    // If both sides are just "nothing" in whatever form (none/0/null/0px), treat that as a pass
+    // rather than a failure, even when the literal strings don't match (e.g. "0px" vs "normal").
+    const pass = isNoneLike(expected) && isNoneLike(actual)
+      ? true
+      : propertiesMatch(property, expected, actual, fontAliasOverrides);
 
     diffs.push({
       property,
       expected,
       actual,
-      pass: propertiesMatch(property, expected, actual, fontAliasOverrides),
+      pass,
       actualSource: actualSourceMap.get(property),
     });
   }

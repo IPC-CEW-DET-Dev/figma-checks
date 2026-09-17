@@ -92,3 +92,27 @@ export function boxShadowsMatch(a: string | null, b: string | null): boolean {
   if (pa.numbers.length !== pb.numbers.length) return false;
   return pa.numbers.every((n, i) => Math.abs(n - pb.numbers[i]) <= PX_TOLERANCE);
 }
+
+/** Compares consolidated "{width} {style} {color}" border strings (e.g. "1px solid rgb(0,0,0)"). */
+export function bordersMatch(a: string | null, b: string | null): boolean {
+  if (!a || !b) return a === b;
+  if (a === "none" || b === "none") return a === b;
+  const parse = (value: string) => {
+    const widthMatch = /-?\d*\.?\d+px/.exec(value);
+    const styleMatch = /solid|dashed|dotted|double|groove|ridge|inset|outset/i.exec(value);
+    let color = value;
+    if (widthMatch) color = color.replace(widthMatch[0], "");
+    if (styleMatch) color = color.replace(styleMatch[0], "");
+    return {
+      width: widthMatch ? parseFloat(widthMatch[0]) : null,
+      style: styleMatch ? styleMatch[0].toLowerCase() : null,
+      color: color.trim() || null,
+    };
+  };
+  const pa = parse(a);
+  const pb = parse(b);
+  if (pa.width != null && pb.width != null && Math.abs(pa.width - pb.width) > PX_TOLERANCE) return false;
+  if (pa.style && pb.style && pa.style !== pb.style) return false;
+  if (pa.color && pb.color && !colorsMatch(pa.color, pb.color)) return false;
+  return true;
+}

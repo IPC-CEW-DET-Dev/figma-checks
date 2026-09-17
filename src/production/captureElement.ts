@@ -1,5 +1,6 @@
 import type { BrowserContext } from "playwright";
 import type { StyleToken } from "../types.js";
+import { getDeclaredRootStyles } from "./declaredStyles.js";
 
 export interface CaptureResult {
   tokens: StyleToken[];
@@ -32,6 +33,9 @@ export async function captureElement(
           "lineHeight",
           "letterSpacing",
           "borderRadius",
+          "borderColor",
+          "borderWidth",
+          "borderStyle",
           "boxShadow",
           "paddingTop",
           "paddingRight",
@@ -83,6 +87,8 @@ export async function captureElement(
         const BOX_PROPERTY_DEFAULTS: Record<string, string> = {
           backgroundColor: "rgba(0, 0, 0, 0)",
           borderRadius: "0px",
+          borderWidth: "0px",
+          borderStyle: "none",
           boxShadow: "none",
           paddingTop: "0px",
           paddingRight: "0px",
@@ -101,17 +107,77 @@ export async function captureElement(
             sources[prop] = descriptors[overrideIndex];
           }
         }
+
+        // Consolidate the three border longhands into a single "border" value (matching how it
+        // reads in the browser's own style panel) — only kept when a real border exists at all.
+        const hasBorder = merged.borderStyle !== "none" && merged.borderWidth !== "0px";
+        const border = hasBorder ? `${merged.borderWidth} ${merged.borderStyle} ${merged.borderColor}` : "none";
+        const borderSource = hasBorder ? (sources.borderColor ?? sources.borderWidth ?? sources.borderStyle) : undefined;
+        delete merged.borderColor;
+        delete merged.borderWidth;
+        delete merged.borderStyle;
+        delete sources.borderColor;
+        delete sources.borderWidth;
+        delete sources.borderStyle;
+
+        // Only keep box-model properties that are actually set away from the browser default — an
+        // element sitting at the plain default isn't something the BEM class "declared", it's noise.
+        for (const prop of Object.keys(BOX_PROPERTY_DEFAULTS)) {
+          if (prop === "borderWidth" || prop === "borderStyle") continue; // folded into "border" above
+          if (merged[prop] === BOX_PROPERTY_DEFAULTS[prop]) {
+            delete merged[prop];
+            delete sources[prop];
+          }
+        }
+        if (hasBorder) {
+          merged.border = border;
+          if (borderSource) sources.border = borderSource;
+        }
+
+        // Typography only means something if the element actually renders text — an icon-only
+        // button still resolves inherited font/color values, but none of that was "declared" for it.
+        const hasText = Boolean(root.textContent && root.textContent.trim().length > 0);
+        if (!hasText) {
+          for (const prop of ["color", "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing"]) {
+            delete merged[prop];
+            delete sources[prop];
+          }
+        }
+
+        const rect = root.getBoundingClientRect();
+        merged.width = `${Math.round(rect.width)}px`;
+        merged.height = `${Math.round(rect.height)}px`;
+
         return { merged, sources };
       },
       excludeSelector
     );
 
-    const tokens = Object.entries(values.merged)
-      .filter(([, value]) => value && value !== "none" && value !== "normal")
+    // getComputedStyle always resolves *some* value for background/border, even when the matched
+    // class never actually declared it (inherited/browser defaults look identical to a real
+    // declaration) — prefer the element's own literal CSS declaration when one exists, so a class
+    // like `.close { background: 0 0; border: none; }` reports exactly that, not a computed guess.
+    const declared = await getDeclaredRootStyles(page, selector);
+    const merged = values.merged;
+    const sources = values.sources;
+
+    if (declared.background || declared["background-color"]) {
+      merged.backgroundColor = declared.background ?? declared["background-color"];
+    }
+    if (declared.border) {
+      merged.border = declared.border;
+    } else if (declared["border-color"] || declared["border-style"] || declared["border-width"]) {
+      merged.border = [declared["border-width"], declared["border-style"], declared["border-color"]]
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    const tokens: StyleToken[] = Object.entries(merged)
+      .filter(([, value]) => Boolean(value))
       .map(([property, value]) => ({
         property: property as StyleToken["property"],
         value,
-        source: values.sources[property],
+        source: sources[property],
       }));
 
     return { tokens, screenshotPath: screenshotDest };
