@@ -1,6 +1,6 @@
 # component-tester
 
-Compares Figma components against their live production implementation — both visually (pixel diff) and structurally (color, typography, spacing, radius, shadow) — and generates an HTML report.
+Compares Figma components against their live production implementation and generates an HTML report. Comparison is **strict and explicit**: you name a Figma frame/layer and a production CSS class, and the tool compares only the styles declared on that exact layer against that exact element (color, typography, spacing, radius, border, shadow, and — for fixed-size layers — width/height). Any difference is flagged as an error. A side-by-side pixel-diff screenshot is also produced for reference, but it never affects pass/fail — only style-token mismatches do.
 
 ## Setup
 
@@ -31,8 +31,9 @@ Each entry in `components.config.json` pairs a Figma node with a production DOM 
 - `figma.nodeId` — right-click a layer in Figma → "Copy link", the `node-id` query param. This can point at either a single component frame, or a component-set (a component with variants like State=Default/Hover).
 - `figma.variantName` (optional) — only needed if `nodeId` points at a component-set. If your component has variants (e.g. "State=Default, Size=Medium"), the tool automatically picks the variant matching the component's declared defaults — you don't need to hunt down an individual variant's node ID. Set `variantName` (a case-insensitive substring, e.g. `"Hover"`) only if you want to test a specific non-default state instead.
 - `production.selector` — any CSS selector that uniquely targets the element (`id`, class, or a `data-testid` attribute). Prefer a dedicated test attribute if class names are unstable (e.g. CSS-in-JS). For dynamic/hashed class prefixes, use an attribute selector like `[class*="Accordion_root"]` (contains), `[class^="..."]` (starts with), or `[class$="..."]` (ends with) instead of an exact `.class` match.
-- `production.excludeSelector` (optional) — the tool scans inside the matched element for the nearest descendant that actually carries each style (background, padding, font, etc.), since that's often not the exact node you selected. If the matched element also wraps an unrelated sibling section — e.g. an accordion header wrapper that also contains the (possibly hidden) collapsible panel, or a nested reused component with its own unrelated spacing — set this to a selector for that section so its box-model styles (background/radius/shadow/padding/gap) aren't mistakenly picked up. Typography (color/font/line-height) is still searched inside the excluded subtree, since the real text is often nested there. Example: when testing "Accordion Header", set `excludeSelector` to the panel's class so its `gap`/padding don't leak into the header's results.
-- `figma.excludeLayerName` (optional) — the Figma-side equivalent of `production.excludeSelector`. Excludes a named layer's subtree (exact match, case-insensitive) from the background/radius/shadow/padding/gap scan — useful when a nested reused layer (e.g. a shared text-block component) has its own gap/padding that would otherwise win over the frame you actually meant to measure. Typography still searches inside it.
+- **Strict, root-only comparison** — the tool reads only the styles declared on the exact element your `selector` targets and the exact Figma layer you name (after transparently unwrapping a single pass-through wrapper frame, common for component instances). It does **not** scan descendants to "find" a value, so every reported token belongs to the element/layer you specified. Pick a `selector` and Figma layer that point directly at the piece you want to compare — for composite components, use `parts` (below) to map each sub-element to its own layer. Width/height are only compared when the Figma layer has an explicitly fixed size (e.g. an icon or close button); layout-driven "fill"/"hug" sizes are ignored.
+  > The older `production.excludeSelector` / `figma.excludeLayerName` fields are now ignored (there's no descendant scan left to exclude from) and can be removed from your config.
+- `compare` (optional, on a component or a `part`) — restrict the comparison to specific property groups so each layer→class pair only checks what's relevant. Accepts group names `background`, `border`, `radius`, `shadow`, `padding`, `gap`, `size`, `typography`, `font`, `color` (or exact property names like `paddingBottom`). Omit to compare everything found. Example: a header part uses `["padding", "typography"]`, an icon uses `["size"]`, a content wrapper whose inner text belongs to other components uses `["padding"]`.
 - `viewport` (optional) — `{ "width": number, "height": number }`, defaults to 1440x900.
 - `parts` (optional) — for composite components that combine multiple visually distinct sub-sections (e.g. an accordion's header + body), a single flat style-token diff isn't meaningful — there's no one "the" padding/gap when several sub-frames each have their own. `parts` lets you declare named sub-sections, each independently diffed:
   ```json
@@ -77,10 +78,10 @@ An optional top-level `fontAliasOverrides` map handles fonts renamed entirely be
 ```
 npm run compare                      # run all components
 npm run compare -- --only "Primary Button"
-npm run compare -- --threshold 5     # allow up to 5% visual mismatch (default 2%)
+npm run compare -- --threshold 5     # visual-diff overlay sensitivity only (does not affect pass/fail)
 ```
 
-Output is written to `reports/<timestamp>/report.html`, with per-component metadata, side-by-side Figma/production screenshots, a pixel-diff overlay, and a style-token pass/fail table. The command exits non-zero if any component has a failing style token, exceeds the visual mismatch threshold, or errors, so it can be wired into CI later.
+Output is written to `reports/<timestamp>/report.html`, with per-component metadata, side-by-side Figma/production screenshots, a reference-only pixel-diff overlay, and a style-token pass/fail table. The command exits non-zero if any component has a failing style token or errors, so it can be wired into CI later. The visual pixel-diff is informational only and never affects pass/fail.
 
 ## Publishing the latest report (GitHub Pages)
 

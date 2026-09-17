@@ -21,16 +21,10 @@ function renderPartMeta(part: ComponentPartResult): string {
     : part.figma.nodeId
       ? `node <code>${escapeHtml(part.figma.nodeId)}</code>`
       : "—";
-  const figmaExclude = part.figma.excludeLayerName
-    ? ` <span class="meta-note">(excluding layer <code>${escapeHtml(part.figma.excludeLayerName)}</code>)</span>`
-    : "";
-  const selectorExclude = part.production.excludeSelector
-    ? ` <span class="meta-note">(excluding <code>${escapeHtml(part.production.excludeSelector)}</code>)</span>`
-    : "";
 
   return `
     <p class="part-meta">
-      Figma: ${figmaRef}${figmaExclude} &middot; Selector: <code>${escapeHtml(part.production.selector)}</code>${selectorExclude}
+      Figma: ${figmaRef} &middot; Selector: <code>${escapeHtml(part.production.selector)}</code>
     </p>`;
 }
 
@@ -60,7 +54,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
 
   const componentSections = run.components
     .map((result) => {
-      const passing = isComponentPassing(result, thresholdPercent);
+      const passing = isComponentPassing(result);
       const statusLabel = passing ? "PASS" : "FAIL";
       const statusClass = passing ? "pass" : "fail";
       const anchorId = slugify(result.name);
@@ -69,9 +63,9 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
       const figmaUrl = `https://www.figma.com/design/${result.figma.fileKey}?node-id=${nodeIdUrlSafe}`;
       const metadata = `
         <dl class="meta">
-          <div class="meta-row"><dt>Figma</dt><dd><a href="${escapeHtml(figmaUrl)}" target="_blank" rel="noopener">${escapeHtml(result.figma.fileKey)} / ${escapeHtml(result.figma.nodeId)}</a>${result.figma.variantName ? ` <span class="meta-note">(variant: ${escapeHtml(result.figma.variantName)})</span>` : ""}${result.figma.excludeLayerName ? `<br><span class="meta-note">excluding layer <code>${escapeHtml(result.figma.excludeLayerName)}</code></span>` : ""}</dd></div>
+          <div class="meta-row"><dt>Figma</dt><dd><a href="${escapeHtml(figmaUrl)}" target="_blank" rel="noopener">${escapeHtml(result.figma.fileKey)} / ${escapeHtml(result.figma.nodeId)}</a>${result.figma.variantName ? ` <span class="meta-note">(variant: ${escapeHtml(result.figma.variantName)})</span>` : ""}</dd></div>
           <div class="meta-row"><dt>Production</dt><dd><a href="${escapeHtml(result.production.url)}" target="_blank" rel="noopener">${escapeHtml(result.production.url)}</a></dd></div>
-          <div class="meta-row"><dt>Selector</dt><dd><code>${escapeHtml(result.production.selector)}</code>${result.production.excludeSelector ? `<br><span class="meta-note">excluding <code>${escapeHtml(result.production.excludeSelector)}</code></span>` : ""}</dd></div>
+          <div class="meta-row"><dt>Selector</dt><dd><code>${escapeHtml(result.production.selector)}</code></dd></div>
         </dl>`;
 
       if (result.error) {
@@ -93,7 +87,7 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
         <div class="images">
           <figure><figcaption>Figma</figcaption><img src="${relative(run.outputDir, result.images.figmaImagePath)}" alt="Figma"></figure>
           <figure><figcaption>Production</figcaption><img src="${relative(run.outputDir, result.images.productionImagePath)}" alt="Production"></figure>
-          <figure><figcaption>Diff (${result.images.mismatchPercent.toFixed(2)}% mismatch)</figcaption><img src="${relative(run.outputDir, result.images.diffImagePath)}" alt="Diff"></figure>
+          <figure><figcaption>Diff (${result.images.mismatchPercent.toFixed(2)}% — reference only)</figcaption><img src="${relative(run.outputDir, result.images.diffImagePath)}" alt="Diff"></figure>
         </div>`
         : "";
 
@@ -128,13 +122,13 @@ export async function generateReport(run: RunResult, thresholdPercent: number): 
     })
     .join("\n");
 
-  const passCount = run.components.filter((r) => isComponentPassing(r, thresholdPercent)).length;
+  const passCount = run.components.filter((r) => isComponentPassing(r)).length;
   const totalCount = run.components.length;
   const allPassing = totalCount > 0 && passCount === totalCount;
 
   const navOptions = run.components
     .map((r) => {
-      const passing = isComponentPassing(r, thresholdPercent);
+      const passing = isComponentPassing(r);
       return `<option value="${slugify(r.name)}">${passing ? "✓" : "✗"} ${escapeHtml(r.name)}</option>`;
     })
     .join("");

@@ -22,38 +22,16 @@ function round(value: number, digits: number): number {
   return Math.round(value * factor) / factor;
 }
 
-/** Finds the first TEXT node within an (already exclusion-filtered) node list. */
-function findFirstTextNode(nodes: FigmaNode[]): FigmaNode | null {
-  return nodes.find((n) => n.type === "TEXT") ?? null;
-}
-
-interface NodeWithDepth {
-  node: FigmaNode;
-  depth: number;
-}
-
-/**
- * Breadth-first list of the node and all descendants (with depth). The node you point `nodeId` at is
- * often a thin wrapper (especially for component instances) — the real fills/radius/padding are
- * frequently one or two levels deeper on an inner frame, so callers scan this list for the first
- * match instead of only trusting the exact node. Any subtree rooted at a layer named
- * `excludeLayerName` (case-insensitive) is skipped entirely — useful when a nested layer (e.g. a
- * reused text-block component) has its own unrelated padding/gap that would otherwise win the scan.
- */
-function collectNodesBreadthFirst(root: FigmaNode, excludeLayerName?: string): NodeWithDepth[] {
-  const excludeTarget = excludeLayerName?.trim().toLowerCase();
-  const result: NodeWithDepth[] = [{ node: root, depth: 0 }];
-  const queue: NodeWithDepth[] = [result[0]];
+/** Breadth-first search for the first TEXT node in the subtree — typography usually lives on a
+ *  nested text layer, not the named container itself, so this is the one thing read below the root. */
+function findFirstTextNode(root: FigmaNode): FigmaNode | null {
+  const queue: FigmaNode[] = [root];
   while (queue.length > 0) {
-    const current = queue.shift() as NodeWithDepth;
-    for (const child of current.node.children ?? []) {
-      if (excludeTarget && child.name.trim().toLowerCase() === excludeTarget) continue;
-      const entry: NodeWithDepth = { node: child, depth: current.depth + 1 };
-      result.push(entry);
-      queue.push(entry);
-    }
+    const current = queue.shift() as FigmaNode;
+    if (current.type === "TEXT") return current;
+    for (const child of current.children ?? []) queue.push(child);
   }
-  return result;
+  return null;
 }
 
 /** True for icon-style instances (all children are plain vector shapes) — their `fills` tint the
@@ -63,69 +41,90 @@ function isIconNode(node: FigmaNode): boolean {
   return children.length > 0 && children.every((c) => c.type === "VECTOR");
 }
 
-export function extractStyleTokens(node: FigmaNode, excludeLayerName?: string): StyleToken[] {
+/** Whether the node itself carries any real box-model styling (used to detect pass-through wrappers). */
+function hasOwnBoxStyle(node: FigmaNode): boolean {
+  const hasFill = node.type !== "TEXT" && Boolean(node.fills?.some((f) => paintToRgba(f) != null));
+  const hasRadius = (node.cornerRadius ?? 0) > 0;
+  const hasShadow = Boolean(node.effects?.some((e) => effectToBoxShadow(e) != null));
+  const hasStroke = (node.strokeWeight ?? 0) > 0 && Boolean(node.strokes?.some((s) => paintToRgba(s) != null));
+  const hasPadding =
+    node.layoutMode != null &&
+    node.layoutMode !== "NONE" &&
+    ((node.paddingTop ?? 0) > 0 ||
+      (node.paddingRight ?? 0) > 0 ||
+      (node.paddingBottom ?? 0) > 0 ||
+      (node.paddingLeft ?? 0) > 0 ||
+      (node.itemSpacing ?? 0) > 0);
+  return hasFill || hasRadius || hasShadow || hasStroke || hasPadding;
+}
+
+function boxesRoughlyEqual(a: FigmaNode["absoluteBoundingBox"], b: FigmaNode["absoluteBoundingBox"]): boolean {
+  if (!a || !b) return false;
+  return Math.abs(a.width - b.width) < 1 && Math.abs(a.height - b.height) < 1;
+}
+
+/**
+ * Unwraps a pure pass-through wrapper — a node with no box styling of its own whose single child
+ * fills its box (common for component instances, where the styled frame sits one level below the
+ * instance root). Stops at icon/text children so a fixed-size icon container isn't collapsed into
+ * its glyph. This is bounded (single child, same size only), not an open-ended subtree search.
+ */
+function resolveEffectiveNode(node: FigmaNode): FigmaNode {
+  let current = node;
+  while (!hasOwnBoxStyle(current) && (current.children?.length ?? 0) === 1) {
+    const child = (current.children as FigmaNode[])[0];
+    if (child.type === "VECTOR" || child.type === "TEXT" || isIconNode(child)) break;
+    if (!boxesRoughlyEqual(current.absoluteBoundingBox, child.absoluteBoundingBox)) break;
+    current = child;
+  }
+  return current;
+}
+
+/**
+ * Root-only extraction: reads the design tokens declared on the named layer itself (after unwrapping
+ * pure pass-through wrappers) — no subtree scan for "the real" value, so a token only ever reflects
+ * the layer you specified. Typography is the one exception, read from the layer's own nested text.
+ * Width/height are emitted only for axes Figma explicitly fixes (e.g. an icon/close-X container).
+ */
+export function extractStyleTokens(node: FigmaNode): StyleToken[] {
   const tokens: StyleToken[] = [];
-  // VECTOR nodes are icon/shape artwork (their fills/strokes draw the graphic itself, e.g. an "X"
-  // icon drawn with strokes) — never meaningful container styling, so they're excluded alongside
-  // icon-wrapper instances.
-  const entries = collectNodesBreadthFirst(node, excludeLayerName).filter(
-    (e) => !isIconNode(e.node) && e.node.type !== "VECTOR"
-  );
-  const nodes = entries.map((e) => e.node);
+  const box = resolveEffectiveNode(node);
 
-  // TEXT nodes are excluded here — their `fills` is font color (handled separately below via
-  // findFirstTextNode), not a container background.
-  const fillNode = nodes.find((n) => n.type !== "TEXT" && n.fills?.some((f) => paintToRgba(f) != null));
-  const fillColor = fillNode?.fills?.map(paintToRgba).find((c) => c != null);
-  if (fillColor) tokens.push({ property: "backgroundColor", value: fillColor });
-
-  const radiusNode = nodes.find((n) => n.cornerRadius != null);
-  if (radiusNode) {
-    tokens.push({ property: "borderRadius", value: `${radiusNode.cornerRadius}px` });
+  if (box.type !== "TEXT" && box.type !== "VECTOR" && !isIconNode(box)) {
+    const fillColor = box.fills?.map(paintToRgba).find((c) => c != null);
+    if (fillColor) tokens.push({ property: "backgroundColor", value: fillColor });
   }
 
-  const shadowNode = nodes.find((n) => n.effects?.some((e) => effectToBoxShadow(e) != null));
-  const shadow = shadowNode?.effects?.map(effectToBoxShadow).find((s) => s != null);
+  if ((box.cornerRadius ?? 0) > 0) {
+    tokens.push({ property: "borderRadius", value: `${box.cornerRadius}px` });
+  }
+
+  const shadow = box.effects?.map(effectToBoxShadow).find((s) => s != null);
   if (shadow) tokens.push({ property: "boxShadow", value: shadow });
 
-  const strokeNode = nodes.find((n) => (n.strokeWeight ?? 0) > 0 && n.strokes?.some((s) => paintToRgba(s) != null));
-  if (strokeNode) {
-    const strokeColor = strokeNode.strokes?.map(paintToRgba).find((c) => c != null);
-    if (strokeColor) {
-      tokens.push({ property: "border", value: `${strokeNode.strokeWeight}px solid ${strokeColor}` });
-    }
+  if ((box.strokeWeight ?? 0) > 0) {
+    const strokeColor = box.strokes?.map(paintToRgba).find((c) => c != null);
+    if (strokeColor) tokens.push({ property: "border", value: `${box.strokeWeight}px solid ${strokeColor}` });
   }
 
-  // Components often nest multiple auto-layout frames — e.g. an instance root that just hugs a single
-  // child, plus that child's own auto-layout frame with the real padding. Both can end up the same
-  // size (the wrapper hugs its child exactly), so on a tie in box size we prefer the deeper node —
-  // a wrapper that merely matches its child's size is a pass-through, not the meaningful frame.
-  const rootBox = node.absoluteBoundingBox;
-  const boxSizeDelta = (n: FigmaNode) => {
-    const box = n.absoluteBoundingBox;
-    if (!box || !rootBox) return Infinity;
-    return Math.abs(box.width - rootBox.width) + Math.abs(box.height - rootBox.height);
-  };
-  const layoutNode = entries
-    .filter((e) => e.node.layoutMode && e.node.layoutMode !== "NONE")
-    .sort((a, b) => boxSizeDelta(a.node) - boxSizeDelta(b.node) || b.depth - a.depth)[0]?.node;
-  if (layoutNode) {
-    tokens.push({ property: "paddingTop", value: `${layoutNode.paddingTop ?? 0}px` });
-    tokens.push({ property: "paddingRight", value: `${layoutNode.paddingRight ?? 0}px` });
-    tokens.push({ property: "paddingBottom", value: `${layoutNode.paddingBottom ?? 0}px` });
-    tokens.push({ property: "paddingLeft", value: `${layoutNode.paddingLeft ?? 0}px` });
-    // Figma omits `itemSpacing` entirely when gap is set to "Auto" (space-between distribution,
-    // no fixed value) — push a recognizable sentinel so styleDiff can skip it outright, rather than
-    // silently having no gap token at all (which would default to "0px" and hide a real difference).
-    tokens.push({ property: "gap", value: layoutNode.itemSpacing != null ? `${layoutNode.itemSpacing}px` : "auto" });
+  if (box.layoutMode && box.layoutMode !== "NONE") {
+    tokens.push({ property: "paddingTop", value: `${box.paddingTop ?? 0}px` });
+    tokens.push({ property: "paddingRight", value: `${box.paddingRight ?? 0}px` });
+    tokens.push({ property: "paddingBottom", value: `${box.paddingBottom ?? 0}px` });
+    tokens.push({ property: "paddingLeft", value: `${box.paddingLeft ?? 0}px` });
+    // Figma omits `itemSpacing` entirely for "Auto" (space-between) gaps — sentinel so styleDiff skips it.
+    tokens.push({ property: "gap", value: box.itemSpacing != null ? `${box.itemSpacing}px` : "auto" });
   }
 
-  if (rootBox) {
-    tokens.push({ property: "width", value: `${Math.round(rootBox.width)}px` });
-    tokens.push({ property: "height", value: `${Math.round(rootBox.height)}px` });
+  // Only cross-check size on axes the designer explicitly fixed — "fill"/"hug" axes are layout/
+  // content-driven, so their measured size isn't a designed value worth comparing.
+  const sizingBox = node.absoluteBoundingBox;
+  if (sizingBox) {
+    if (node.layoutSizingHorizontal === "FIXED") tokens.push({ property: "width", value: `${Math.round(sizingBox.width)}px` });
+    if (node.layoutSizingVertical === "FIXED") tokens.push({ property: "height", value: `${Math.round(sizingBox.height)}px` });
   }
 
-  const textNode = findFirstTextNode(nodes);
+  const textNode = findFirstTextNode(node);
   if (textNode?.style) {
     const { fontFamily, fontWeight, fontSize, lineHeightPx, letterSpacing } = textNode.style;
     if (fontFamily) tokens.push({ property: "fontFamily", value: fontFamily });

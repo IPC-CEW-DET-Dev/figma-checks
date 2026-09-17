@@ -28,7 +28,7 @@ program
     console.log("");
     let anyFailed = false;
     for (const result of run.components) {
-      const passing = isComponentPassing(result, threshold);
+      const passing = isComponentPassing(result);
       if (!passing) anyFailed = true;
       const label = passing ? chalk.green("PASS") : chalk.red("FAIL");
       console.log(`${label}  ${result.name}`);

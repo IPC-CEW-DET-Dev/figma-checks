@@ -4,6 +4,10 @@ export interface ComponentPart {
    *  call, and far easier to obtain than a nested instance-child node ID) or an explicit `nodeId`. */
   figma: { layerName?: string; nodeId?: string; variantName?: string; excludeLayerName?: string };
   production: { selector: string; excludeSelector?: string };
+  /** Restrict this part's comparison to these property groups — e.g. "padding", "gap", "typography",
+   *  "size", "border", "background", "radius", "shadow" (or exact property names). Omit to compare
+   *  everything found on both sides. */
+  compare?: string[];
 }
 
 export interface Viewport {
@@ -16,6 +20,8 @@ export interface ComponentSpec {
   figma: { fileKey: string; nodeId: string; variantName?: string; excludeLayerName?: string };
   production: { url: string; selector: string; excludeSelector?: string };
   viewport?: Viewport;
+  /** Restrict the top-level comparison to these property groups (see ComponentPart.compare). */
+  compare?: string[];
   /** For composite components (e.g. an accordion's header+body): named sub-sections, each with its
    *  own explicit Figma node and production selector, so style diffs don't have to guess which
    *  nested frame/element is "the" one. The top-level figma/production above still drive the overall

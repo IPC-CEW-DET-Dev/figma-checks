@@ -90,6 +90,9 @@ export interface FigmaNode {
   cornerRadius?: number;
   style?: FigmaTypeStyle;
   layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL";
+  /** Per-axis sizing intent within auto-layout: FIXED = designer set an explicit dimension. */
+  layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
+  layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
   paddingTop?: number;
   paddingRight?: number;
   paddingBottom?: number;

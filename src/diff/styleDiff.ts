@@ -16,6 +16,41 @@ const PX_PROPERTIES = new Set<StylePropertyName>([
 ]);
 const COLOR_PROPERTIES = new Set<StylePropertyName>(["color", "backgroundColor"]);
 
+// Friendly group names a component/part can list in `compare` to scope which properties are checked.
+const COMPARE_GROUPS: Record<string, StylePropertyName[]> = {
+  background: ["backgroundColor"],
+  backgroundcolor: ["backgroundColor"],
+  border: ["border"],
+  radius: ["borderRadius"],
+  borderradius: ["borderRadius"],
+  shadow: ["boxShadow"],
+  boxshadow: ["boxShadow"],
+  padding: ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"],
+  gap: ["gap"],
+  size: ["width", "height"],
+  width: ["width"],
+  height: ["height"],
+  typography: ["color", "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing"],
+  font: ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing"],
+  color: ["color"],
+  fontfamily: ["fontFamily"],
+  fontsize: ["fontSize"],
+  fontweight: ["fontWeight"],
+  lineheight: ["lineHeight"],
+  letterspacing: ["letterSpacing"],
+};
+
+/** Expands `compare` group names into the concrete set of properties to keep, or null for "compare all". */
+function expandCompare(compare: string[] | undefined): Set<StylePropertyName> | null {
+  if (!compare || compare.length === 0) return null;
+  const allowed = new Set<StylePropertyName>();
+  for (const name of compare) {
+    const props = COMPARE_GROUPS[name.trim().toLowerCase()];
+    if (props) for (const p of props) allowed.add(p);
+  }
+  return allowed;
+}
+
 // For these, an absent Figma value has a well-defined visual meaning (no fill/radius/shadow/gap/
 // border), so a real production value is still compared against that implicit default rather than
 // left blank — this is only used for *display*: both sides are already filtered upstream (Figma
@@ -71,20 +106,27 @@ function propertiesMatch(
 export function diffStyleTokens(
   expectedTokens: StyleToken[],
   actualTokens: StyleToken[],
-  fontAliasOverrides: Record<string, string> = {}
+  fontAliasOverrides: Record<string, string> = {},
+  compare?: string[]
 ): StyleDiffEntry[] {
   const expectedMap = tokensToMap(expectedTokens);
   const actualMap = tokensToMap(actualTokens);
   const actualSourceMap = sourcesToMap(actualTokens);
+  const allowed = expandCompare(compare);
   const properties = new Set<StylePropertyName>([...expectedMap.keys(), ...actualMap.keys()]);
 
   const diffs: StyleDiffEntry[] = [];
   for (const property of properties) {
+    if (allowed && !allowed.has(property)) continue;
     const actual = actualMap.get(property) ?? null;
     let expected = expectedMap.get(property) ?? null;
 
     // "auto" gap (space-between distribution) has no fixed value at all — not comparable either way.
     if (property === "gap" && expected === "auto") continue;
+
+    // Production always reports a rendered width/height, but that's only a designed value to check
+    // when Figma explicitly fixed the axis — otherwise skip so layout-driven sizes aren't flagged.
+    if ((property === "width" || property === "height") && expected == null) continue;
 
     if (expected == null) {
       const assumedDefault = ASSUMED_FIGMA_DEFAULTS[property];
